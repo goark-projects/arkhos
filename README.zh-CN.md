@@ -8,7 +8,7 @@ Arkhos 不是 Java Servlet 兼容层，也不是 WAR/JSP 运行时。它使用�
 
 ## 当前状态
 
-`main` 分支保存项目治理、文档和仓库结构。`dev` 分支已经包含 Arkarta `v0.0.1` 的第一批实现切片：基于 `net/http` 的 Servlet Core、Arkhos 具体容器、标准库 HTTP Server 封装，以及 Native I/O 可移植兜底能力。
+`main` 分支保存项目治理、文档和仓库结构。`dev` 分支已经包含 Arkarta `v0.0.1` 的多批实现切片：基于 `net/http` 的 Servlet Core、Session、Multipart、Async/Stream、Upgrade、Security、WebSocket 集成辅助、Arkhos 具体容器、标准库 HTTP Server 封装，以及 Native I/O 可移植兜底能力。
 
 ## 设计目标
 
@@ -25,7 +25,8 @@ Arkhos 不是 Java Servlet 兼容层，也不是 WAR/JSP 运行时。它使用�
 - 显式 Servlet 与 Filter 注册的部署模型。
 - 静态资源处理。
 - Native I/O 可移植兜底发送器。
-- Session、multipart、async、security、upgrade、WebSocket、JSON 和 validation Profile 后续分批实现。
+- Session、multipart、async、security、upgrade 和 WebSocket 集成辅助。
+- JSON 和 validation Profile 后续分批实现。
 - Arkarta `v0.0.1` 的 TCK 集成。
 
 ## 已支持 Profile
@@ -34,7 +35,12 @@ Arkhos 不是 Java Servlet 兼容层，也不是 WAR/JSP 运行时。它使用�
 | --- | --- | --- |
 | Servlet Core | `dev` 已实现 | `servlet/tck.RunCoreHTTP`、`RunHTTPContainer`、`RunLifecycle`、`RunErrorPages`、`RunStaticResources` |
 | Native I/O | `dev` 已通过可移植兜底实现 | `servlet/tck.RunNativeIO` |
-| Session、multipart、async、security、upgrade、WebSocket | 计划中 | 对应 TCK 通过前不声明兼容 |
+| Session | `dev` 已实现 | `servlet/tck.RunSessionManager`、`RunSessionRequestBinding`、`RunMemorySessionProfile` |
+| Multipart | `dev` 已实现 | `servlet/tck.RunMultipartParser` |
+| Async/Stream | `dev` 已实现 | `servlet/tck.RunAsyncLifecycle` |
+| Upgrade | `dev` 已实现 | `nethttp.Response` 通过标准库 hijack 支持 Servlet `upgrade.HTTP` |
+| Security | `dev` 已实现 | `servlet/tck.RunSecurity`、`BasicSecurityPolicy`、`ConstraintSecurityPolicy` |
+| WebSocket | `dev` 已作为 Arkarta 集成辅助实现 | `websocket/tck.RunHandshake`、`RunFrameCodec`、`RunCompression`、`RunEndpointLifecycle` |
 
 ## 项目结构
 

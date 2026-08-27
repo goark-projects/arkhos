@@ -11,17 +11,16 @@
 3. `dev` 已完成：`net/http` 适配器以及核心请求/响应映射。
 4. `dev` 已完成：静态资源和错误分发 TCK 覆盖。
 5. `dev` 已完成：已实现 Core 和 Native I/O Profile 的 Arkarta TCK 集成。
+6. `dev` 已完成：Session 管理器、基于 Cookie 的请求绑定、ID 轮换和 URL rewriting 辅助。
+7. `dev` 已完成：Multipart 解析器集成、请求绑定和请求结束清理。
+8. `dev` 已完成：Async 生命周期辅助、流式响应包装、HTTP Upgrade、Security 策略钩子和 WebSocket 集成辅助。
 
 ## 后续 Profile 切片
 
-- Session 管理器和 Cookie 策略。
-- Multipart 解析和清理策略。
-- 异步请求生命周期和流式处理。
-- 安全约束和 Principal 传递。
 - 平台支持时提供 Native I/O 优化映射。
-- WebSocket 握手、子协议协商和帧运行时。
 - 通过 Arkarta JSON 集成 JSON Provider。
 - 在显式容器边界集成 Validation。
+- Goark Boot starter 和内嵌 Arkhos 自动配置。
 
 ## 非目标
 

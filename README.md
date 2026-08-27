@@ -8,7 +8,7 @@ Arkhos is not a Java Servlet compatibility layer and is not a WAR/JSP runtime. I
 
 ## Status
 
-The `main` branch contains project governance, documentation, and repository structure. The `dev` branch contains the first Arkarta `v0.0.1` implementation slice: Servlet Core over `net/http`, a concrete Arkhos container, a standard-library HTTP server wrapper, and Native I/O fallback support.
+The `main` branch contains project governance, documentation, and repository structure. The `dev` branch contains the Arkarta `v0.0.1` implementation slices for Servlet Core, Session, Multipart, Async/Stream, Upgrade, Security, WebSocket integration helpers, a concrete Arkhos `net/http` container, a standard-library HTTP server wrapper, and Native I/O fallback support.
 
 ## Design Goals
 
@@ -25,7 +25,8 @@ The `main` branch contains project governance, documentation, and repository str
 - Deployment model for explicit servlet and filter registration.
 - Static resource handling.
 - Native I/O portable fallback sender.
-- Session, multipart, async, security, upgrade, WebSocket, JSON, and validation profiles in later slices.
+- Session, multipart, async, security, upgrade, and WebSocket integration helpers.
+- JSON and validation profiles in later slices.
 - TCK integration for Arkarta `v0.0.1`.
 
 ## Supported Profiles
@@ -34,7 +35,12 @@ The `main` branch contains project governance, documentation, and repository str
 | --- | --- | --- |
 | Servlet Core | Implemented on `dev` | `servlet/tck.RunCoreHTTP`, `RunHTTPContainer`, `RunLifecycle`, `RunErrorPages`, `RunStaticResources` |
 | Native I/O | Implemented on `dev` through portable fallback | `servlet/tck.RunNativeIO` |
-| Session, multipart, async, security, upgrade, WebSocket | Planned | Not claimed until corresponding TCKs pass |
+| Session | Implemented on `dev` | `servlet/tck.RunSessionManager`, `RunSessionRequestBinding`, `RunMemorySessionProfile` |
+| Multipart | Implemented on `dev` | `servlet/tck.RunMultipartParser` |
+| Async/Stream | Implemented on `dev` | `servlet/tck.RunAsyncLifecycle` |
+| Upgrade | Implemented on `dev` | `nethttp.Response` implements Servlet `upgrade.HTTP` through standard-library hijack |
+| Security | Implemented on `dev` | `servlet/tck.RunSecurity`, `BasicSecurityPolicy`, `ConstraintSecurityPolicy` |
+| WebSocket | Implemented on `dev` as Arkarta integration helpers | `websocket/tck.RunHandshake`, `RunFrameCodec`, `RunCompression`, `RunEndpointLifecycle` |
 
 ## Project Layout
 

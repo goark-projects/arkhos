@@ -11,17 +11,16 @@ The first implementation milestone should prove Arkarta Servlet Core on top of `
 3. Done on `dev`: `net/http` adapter and core request/response mapping.
 4. Done on `dev`: static resources and error dispatch TCK coverage.
 5. Done on `dev`: Arkarta TCK integration for implemented Core and Native I/O profiles.
+6. Done on `dev`: Session manager, cookie-backed request binding, ID rotation, and URL rewriting helpers.
+7. Done on `dev`: Multipart parser integration, request binding, and request-end cleanup.
+8. Done on `dev`: Async lifecycle helpers, stream wrappers, HTTP upgrade, Security policy hooks, and WebSocket integration helpers.
 
 ## Later Profile Slices
 
-- Session manager and cookie policy.
-- Multipart parsing and cleanup policy.
-- Async request lifecycle and streaming.
-- Security constraints and principal propagation.
 - Native I/O optimized platform mappings where the platform supports them.
-- WebSocket handshake, subprotocol negotiation, and frame runtime.
 - JSON provider integration through Arkarta JSON.
 - Validation integration at explicit container boundaries.
+- Goark Boot starter and embedded Arkhos auto-configuration.
 
 ## Non-Goals
 

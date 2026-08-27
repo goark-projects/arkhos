@@ -17,11 +17,20 @@ type Container struct {
 	sender  nativeio.Sender
 }
 
+// profileSecurity 与 Arkarta Servlet Security Profile 标准值保持一致。
+const profileSecurity servletcontainer.Profile = "security"
+
 // NewContainer 创建默认 Arkhos net/http 容器。
-func NewContainer() *Container {
+func NewContainer(options ...ContainerOption) *Container {
+	cfg := buildContainerOptions(options)
 	return &Container{
-		runtime: internalcontainer.NewRuntime(defaultMetadata()),
-		sender:  nativeio.NewStandardSender(),
+		runtime: internalcontainer.NewRuntime(
+			defaultMetadata(),
+			internalcontainer.WithApplicationDecorator(func(application servletcontainer.Application) (servletcontainer.Application, error) {
+				return newProfileApplication(application, cfg)
+			}),
+		),
+		sender: nativeio.NewStandardSender(),
 	}
 }
 
@@ -92,7 +101,15 @@ func defaultMetadata() servletcontainer.Metadata {
 	return servletcontainer.NewMetadata(
 		Name,
 		Version,
-		[]servletcontainer.Profile{servletcontainer.ProfileCore, servletcontainer.ProfileNativeIO},
+		[]servletcontainer.Profile{
+			servletcontainer.ProfileCore,
+			servletcontainer.ProfileSession,
+			servletcontainer.ProfileMultipart,
+			servletcontainer.ProfileAsyncStream,
+			servletcontainer.ProfileUpgrade,
+			servletcontainer.ProfileNativeIO,
+			profileSecurity,
+		},
 		map[string]string{
 			"arkarta":   "v0.0.1",
 			"transport": "net/http",

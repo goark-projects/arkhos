@@ -17,6 +17,8 @@ Arkhos 是容器实现，不是新的 Web 标准。公共契约应来自 Arkarta
 
 当前 `dev` 实现由 Arkhos 内部代码负责容器生命周期和应用匹配，请求/响应边界使用 Arkarta 标准 `net/http` 适配器。这样容器身份属于 Arkhos，后续替换底层适配器时不需要改变应用部署代码。
 
+可选 Servlet Profile 通过 Arkhos 应用装饰器接入。装饰器会在托管 Arkarta 应用处理器运行前绑定请求级 profile context，使 Session、Multipart、Security、Async 和 Upgrade 辅助能力保持容器所有权，同时不改变 Arkarta 核心应用构造逻辑。
+
 ## 包依赖方向
 
 ```text
@@ -43,4 +45,8 @@ arkhos public API
 
 - Servlet Core：`RunCoreHTTP`、`RunHTTPContainer`、`RunLifecycle`、`RunErrorPages` 和 `RunStaticResources`。
 - Native I/O：通过可移植兜底发送器通过 `RunNativeIO`。
+- Session：`RunSessionManager`、`RunSessionRequestBinding` 和 `RunMemorySessionProfile`。
+- Multipart：`RunMultipartParser` 以及 Arkhos profile 装饰器提供的请求结束清理。
+- Async/Stream 和 Security：`RunAsyncLifecycle`、`RunSecurity`，以及 Arkhos 请求绑定策略测试。
+- Upgrade 和 WebSocket：标准库 hijack 支持、Arkarta WebSocket 握手/帧/压缩/Endpoint TCK，以及 Servlet Upgrade 集成辅助。
 - 真实 Server 路径：基于 `net.Listener` 的 `Server.Serve` 测试，并覆盖 `context` 取消后的优雅关闭。

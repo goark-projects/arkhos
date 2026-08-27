@@ -16,6 +16,7 @@ import (
 type Runtime struct {
 	metadata  servletcontainer.Metadata
 	validator deploy.Validator
+	decorator ApplicationDecorator
 
 	mu           sync.RWMutex
 	applications []servletcontainer.Application
@@ -23,12 +24,34 @@ type Runtime struct {
 	shutdown     bool
 }
 
+// ErrNilDecoratedApplication 表示应用装饰器返回了空应用。
+var ErrNilDecoratedApplication = errors.New("arkhos/container: application decorator returned nil")
+
+// ApplicationDecorator 在应用初始化后包装容器运行能力。
+type ApplicationDecorator func(servletcontainer.Application) (servletcontainer.Application, error)
+
+// Option 定制容器运行时。
+type Option func(*Runtime)
+
+// WithApplicationDecorator 设置应用装饰器。
+func WithApplicationDecorator(decorator ApplicationDecorator) Option {
+	return func(r *Runtime) {
+		r.decorator = decorator
+	}
+}
+
 // NewRuntime 创建容器运行时。
-func NewRuntime(metadata servletcontainer.Metadata) *Runtime {
-	return &Runtime{
+func NewRuntime(metadata servletcontainer.Metadata, options ...Option) *Runtime {
+	runtime := &Runtime{
 		metadata:  metadata,
 		validator: deploy.NewValidator(metadata),
 	}
+	for _, option := range options {
+		if option != nil {
+			option(runtime)
+		}
+	}
+	return runtime
 }
 
 // Metadata 返回容器能力元数据。
@@ -51,9 +74,20 @@ func (r *Runtime) Deploy(ctx context.Context, deployment *servletcontainer.Deplo
 	if err := r.validator.Validate(deployment); err != nil {
 		return nil, err
 	}
-	application, err := servletcontainer.NewApplication(ctx, deployment)
+	managed, err := servletcontainer.NewApplication(ctx, deployment)
 	if err != nil {
 		return nil, err
+	}
+	var application servletcontainer.Application = managed
+	if r.decorator != nil {
+		decorated, err := r.decorator(application)
+		if err != nil {
+			return nil, errors.Join(err, managed.Stop(ctx))
+		}
+		if decorated == nil {
+			return nil, errors.Join(ErrNilDecoratedApplication, managed.Stop(ctx))
+		}
+		application = decorated
 	}
 
 	r.mu.Lock()
