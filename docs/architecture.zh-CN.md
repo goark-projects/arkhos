@@ -15,6 +15,8 @@ Arkhos 是容器实现，不是新的 Web 标准。公共契约应来自 Arkarta
 
 第一版运行模型基于 Go `net/http`。Arkhos 应保留 Go server 已经正确的行为，只在容器边界补充 Arkarta 语义：部署校验、Servlet/Filter 链、分发、生命周期回调、资源解析、Session、异步处理、安全和协议升级。
 
+当前 `dev` 实现由 Arkhos 内部代码负责容器生命周期和应用匹配，请求/响应边界使用 Arkarta 标准 `net/http` 适配器。这样容器身份属于 Arkhos，后续替换底层适配器时不需要改变应用部署代码。
+
 ## 包依赖方向
 
 ```text
@@ -36,3 +38,9 @@ arkhos public API
 - 生命周期和关闭流程必须感知 `context.Context`。
 - 用稳定错误值表达行为，不依赖字符串匹配。
 - 兼容性声明必须先有测试证明。
+
+## 当前实现证据
+
+- Servlet Core：`RunCoreHTTP`、`RunHTTPContainer`、`RunLifecycle`、`RunErrorPages` 和 `RunStaticResources`。
+- Native I/O：通过可移植兜底发送器通过 `RunNativeIO`。
+- 真实 Server 路径：基于 `net.Listener` 的 `Server.Serve` 测试，并覆盖 `context` 取消后的优雅关闭。

@@ -8,7 +8,7 @@ Arkhos is not a Java Servlet compatibility layer and is not a WAR/JSP runtime. I
 
 ## Status
 
-Arkhos is being initialized. The `main` branch contains project governance, documentation, and repository structure. Runtime implementation begins on the `dev` branch.
+The `main` branch contains project governance, documentation, and repository structure. The `dev` branch contains the first Arkarta `v0.0.1` implementation slice: Servlet Core over `net/http`, a concrete Arkhos container, a standard-library HTTP server wrapper, and Native I/O fallback support.
 
 ## Design Goals
 
@@ -24,8 +24,17 @@ Arkhos is being initialized. The `main` branch contains project governance, docu
 - `net/http` adapter and request dispatch.
 - Deployment model for explicit servlet and filter registration.
 - Static resource handling.
-- Session, multipart, async, security, native I/O, WebSocket, JSON, and validation profiles in later slices.
+- Native I/O portable fallback sender.
+- Session, multipart, async, security, upgrade, WebSocket, JSON, and validation profiles in later slices.
 - TCK integration for Arkarta `v0.0.1`.
+
+## Supported Profiles
+
+| Profile | Status | Evidence |
+| --- | --- | --- |
+| Servlet Core | Implemented on `dev` | `servlet/tck.RunCoreHTTP`, `RunHTTPContainer`, `RunLifecycle`, `RunErrorPages`, `RunStaticResources` |
+| Native I/O | Implemented on `dev` through portable fallback | `servlet/tck.RunNativeIO` |
+| Session, multipart, async, security, upgrade, WebSocket | Planned | Not claimed until corresponding TCKs pass |
 
 ## Project Layout
 
@@ -45,6 +54,47 @@ docs/              Architecture, roadmap, development, and decision records.
 go test ./...
 go vet ./...
 gofmt -w .
+```
+
+## Minimal Example
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+
+	"goark.dev/arkarta/servlet"
+	servletcontainer "goark.dev/arkarta/servlet/container"
+	"goark.dev/arkhos/nethttp"
+)
+
+func main() {
+	app, err := servlet.NewWebApp("orders")
+	if err != nil {
+		log.Fatal(err)
+	}
+	deployment, err := servletcontainer.NewDeployment(app,
+		servletcontainer.WithMapping("/", servlet.HandlerFunc(func(_ context.Context, _ *servlet.Request, res servlet.Response) error {
+			_, err := res.WriteString("ok")
+			return err
+		})),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	container := nethttp.NewContainer()
+	if _, err := container.Deploy(context.Background(), deployment); err != nil {
+		log.Fatal(err)
+	}
+	server, err := nethttp.NewServer(container, nethttp.WithAddress(":8080"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Fatal(server.ListenAndServe(context.Background()))
+}
 ```
 
 ## Compatibility Policy

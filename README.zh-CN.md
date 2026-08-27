@@ -8,7 +8,7 @@ Arkhos 不是 Java Servlet 兼容层，也不是 WAR/JSP 运行时。它使用�
 
 ## 当前状态
 
-Arkhos 正在初始化。`main` 分支保存项目治理、文档和仓库结构；运行时实现从 `dev` 分支开始。
+`main` 分支保存项目治理、文档和仓库结构。`dev` 分支已经包含 Arkarta `v0.0.1` 的第一批实现切片：基于 `net/http` 的 Servlet Core、Arkhos 具体容器、标准库 HTTP Server 封装，以及 Native I/O 可移植兜底能力。
 
 ## 设计目标
 
@@ -24,8 +24,17 @@ Arkhos 正在初始化。`main` 分支保存项目治理、文档和仓库结构
 - `net/http` 适配器和请求分发。
 - 显式 Servlet 与 Filter 注册的部署模型。
 - 静态资源处理。
-- Session、multipart、async、security、native I/O、WebSocket、JSON 和 validation Profile 后续分批实现。
+- Native I/O 可移植兜底发送器。
+- Session、multipart、async、security、upgrade、WebSocket、JSON 和 validation Profile 后续分批实现。
 - Arkarta `v0.0.1` 的 TCK 集成。
+
+## 已支持 Profile
+
+| Profile | 状态 | 证据 |
+| --- | --- | --- |
+| Servlet Core | `dev` 已实现 | `servlet/tck.RunCoreHTTP`、`RunHTTPContainer`、`RunLifecycle`、`RunErrorPages`、`RunStaticResources` |
+| Native I/O | `dev` 已通过可移植兜底实现 | `servlet/tck.RunNativeIO` |
+| Session、multipart、async、security、upgrade、WebSocket | 计划中 | 对应 TCK 通过前不声明兼容 |
 
 ## 项目结构
 
@@ -45,6 +54,47 @@ docs/              架构、路线图、开发规范和决策记录。
 go test ./...
 go vet ./...
 gofmt -w .
+```
+
+## 最小示例
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+
+	"goark.dev/arkarta/servlet"
+	servletcontainer "goark.dev/arkarta/servlet/container"
+	"goark.dev/arkhos/nethttp"
+)
+
+func main() {
+	app, err := servlet.NewWebApp("orders")
+	if err != nil {
+		log.Fatal(err)
+	}
+	deployment, err := servletcontainer.NewDeployment(app,
+		servletcontainer.WithMapping("/", servlet.HandlerFunc(func(_ context.Context, _ *servlet.Request, res servlet.Response) error {
+			_, err := res.WriteString("ok")
+			return err
+		})),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	container := nethttp.NewContainer()
+	if _, err := container.Deploy(context.Background(), deployment); err != nil {
+		log.Fatal(err)
+	}
+	server, err := nethttp.NewServer(container, nethttp.WithAddress(":8080"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Fatal(server.ListenAndServe(context.Background()))
+}
 ```
 
 ## 兼容性策略

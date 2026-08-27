@@ -15,6 +15,8 @@ Arkhos is a container implementation, not a new Web standard. Public contracts s
 
 The first runtime model is based on Go `net/http`. Arkhos should preserve Go server behavior where it is already correct, and add Arkarta semantics only at the container boundary: deployment validation, servlet/filter chains, dispatch, lifecycle callbacks, resource resolution, sessions, async handling, security, and upgrade support.
 
+The current `dev` implementation owns the container lifecycle and application matching in Arkhos internals, while the request/response edge uses Arkarta's standard `net/http` adapter. This keeps the public container identity in Arkhos and allows the low-level adapter to be replaced later without changing application deployment code.
+
 ## Package Direction
 
 ```text
@@ -36,3 +38,9 @@ Internal packages may depend on Arkarta. Arkarta must never depend on Arkhos.
 - Context-aware lifecycle and shutdown.
 - Error values with stable behavior instead of string matching.
 - Tests before compatibility claims.
+
+## Current Implementation Evidence
+
+- Servlet Core: `RunCoreHTTP`, `RunHTTPContainer`, `RunLifecycle`, `RunErrorPages`, and `RunStaticResources`.
+- Native I/O: `RunNativeIO` through the portable fallback sender.
+- Real server path: `net.Listener` based `Server.Serve` test with graceful context cancellation.

@@ -9,3 +9,4 @@ All notable changes to Arkhos are documented in this file.
 ### Added
 
 - Initialized the Arkhos repository with Apache License 2.0, Go module metadata, bilingual documentation, and the first package layout for Arkarta `v0.0.1` implementation work.
+- Added the first Arkarta `v0.0.1` implementation slice on `dev`: Arkhos `net/http` container, Servlet Core dispatch, server runtime wrapper, Native I/O fallback sender, and TCK coverage for claimed profiles.
