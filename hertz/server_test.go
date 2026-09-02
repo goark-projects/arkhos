@@ -34,6 +34,9 @@ func TestNewServerAppliesOptions(t *testing.T) {
 		t.Fatalf("NewServer failed: %v", err)
 	}
 	options := server.newEngine(nil).GetOptions()
+	if server.Address() != "127.0.0.1:9090" {
+		t.Fatalf("address = %q, want 127.0.0.1:9090", server.Address())
+	}
 	if options.Addr != "127.0.0.1:9090" || options.ReadTimeout != 0 ||
 		options.WriteTimeout != time.Second || options.IdleTimeout != 2*time.Second ||
 		options.KeepAliveTimeout != 3*time.Second || options.ExitWaitTimeout != 4*time.Second ||

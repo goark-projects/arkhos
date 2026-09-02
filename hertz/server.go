@@ -41,6 +41,14 @@ func (s *Server) Handler() app.HandlerFunc {
 	return s.container.Handler()
 }
 
+// Address 返回配置的监听地址。
+func (s *Server) Address() string {
+	if s == nil {
+		return ""
+	}
+	return s.options.address
+}
+
 // Hertz 返回当前正在运行的底层 Hertz 实例。
 func (s *Server) Hertz() *hertzserver.Hertz {
 	if s == nil {
