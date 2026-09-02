@@ -6,6 +6,7 @@ import (
 
 	internalcontainer "goark.dev/arkhos/internal/container"
 	internalnethttp "goark.dev/arkhos/internal/nethttp"
+	internalprofile "goark.dev/arkhos/internal/profile"
 
 	servletcontainer "goark.dev/arkarta/servlet/container"
 	"goark.dev/arkarta/servlet/nativeio"
@@ -27,7 +28,7 @@ func NewContainer(options ...ContainerOption) *Container {
 		runtime: internalcontainer.NewRuntime(
 			defaultMetadata(),
 			internalcontainer.WithApplicationDecorator(func(application servletcontainer.Application) (servletcontainer.Application, error) {
-				return newProfileApplication(application, cfg)
+				return internalprofile.Decorate(application, cfg)
 			}),
 		),
 		sender: nativeio.NewStandardSender(),

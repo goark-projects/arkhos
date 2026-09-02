@@ -1,4 +1,4 @@
-package nethttp
+package profile
 
 import (
 	"context"
@@ -11,32 +11,32 @@ import (
 	"goark.dev/arkarta/servlet/session"
 )
 
-const (
-	attributeProfileContext = "arkhos.nethttp.profile_context"
-)
+const attributeContext = "arkhos.profile.context"
+const attributeAsyncContext = "arkhos.profile.async_context"
 
-type profileContext struct {
+type requestContext struct {
 	sessionAccessor *session.Accessor
 	multipartParser *multipart.Parser
 	securityPolicy  SecurityPolicy
 	asyncOptions    []async.Option
 }
 
-type profileApplication struct {
+type application struct {
 	delegate servletcontainer.Application
-	profile  *profileContext
+	profile  *requestContext
 }
 
-func newProfileApplication(delegate servletcontainer.Application, cfg containerOptions) (servletcontainer.Application, error) {
+// Decorate 为应用绑定容器拥有的可选 Profile 运行时。
+func Decorate(delegate servletcontainer.Application, cfg Config) (servletcontainer.Application, error) {
 	if delegate == nil {
 		return nil, ErrNilApplication
 	}
-	profile := &profileContext{
-		securityPolicy: cfg.securityPolicy,
-		asyncOptions:   append([]async.Option(nil), cfg.asyncOptions...),
+	profile := &requestContext{
+		securityPolicy: cfg.SecurityPolicy,
+		asyncOptions:   append([]async.Option(nil), cfg.AsyncOptions...),
 	}
-	if cfg.sessionManagerFactory != nil {
-		manager, err := cfg.sessionManagerFactory(delegate.WebApp())
+	if cfg.SessionManagerFactory != nil {
+		manager, err := cfg.SessionManagerFactory(delegate.WebApp())
 		if err != nil {
 			return nil, err
 		}
@@ -48,23 +48,20 @@ func newProfileApplication(delegate servletcontainer.Application, cfg containerO
 			profile.sessionAccessor = accessor
 		}
 	}
-	if cfg.multipartParser != nil {
-		profile.multipartParser = cfg.multipartParser()
+	if cfg.MultipartParser != nil {
+		profile.multipartParser = cfg.MultipartParser()
 	}
-	return &profileApplication{
-		delegate: delegate,
-		profile:  profile,
-	}, nil
+	return &application{delegate: delegate, profile: profile}, nil
 }
 
-func (a *profileApplication) WebApp() *servlet.WebApp {
+func (a *application) WebApp() *servlet.WebApp {
 	if a == nil || a.delegate == nil {
 		return nil
 	}
 	return a.delegate.WebApp()
 }
 
-func (a *profileApplication) Handler() servlet.Handler {
+func (a *application) Handler() servlet.Handler {
 	if a == nil || a.delegate == nil {
 		return servlet.HandlerFunc(func(context.Context, *servlet.Request, servlet.Response) error {
 			return ErrNilApplication
@@ -73,34 +70,51 @@ func (a *profileApplication) Handler() servlet.Handler {
 	delegate := a.delegate.Handler()
 	return servlet.HandlerFunc(func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
 		if req != nil {
-			req.SetAttribute(attributeProfileContext, a.profile)
+			req.SetAttribute(attributeContext, a.profile)
 		}
 		if a.profile != nil && a.profile.securityPolicy != nil {
 			if err := a.profile.securityPolicy.Apply(ctx, req, res); err != nil {
 				return errors.Join(err, cleanupMultipart(req))
 			}
 		}
-		err := delegate.Serve(ctx, req, res)
-		return errors.Join(err, cleanupMultipart(req))
+		return errors.Join(delegate.Serve(ctx, req, res), awaitAsync(req), cleanupMultipart(req))
 	})
 }
 
-func (a *profileApplication) Stop(ctx context.Context) error {
+func awaitAsync(req *servlet.Request) error {
+	if req == nil {
+		return nil
+	}
+	value, ok := req.Attribute(attributeAsyncContext)
+	if !ok {
+		return nil
+	}
+	asyncContext, ok := value.(*async.Context)
+	if !ok || asyncContext == nil {
+		return nil
+	}
+	return errors.Join(
+		asyncContext.Await(context.Background()),
+		asyncContext.AwaitQuiescence(context.Background()),
+	)
+}
+
+func (a *application) Stop(ctx context.Context) error {
 	if a == nil || a.delegate == nil {
 		return nil
 	}
 	return a.delegate.Stop(ctx)
 }
 
-func currentProfile(req *servlet.Request) (*profileContext, bool) {
+func current(req *servlet.Request) (*requestContext, bool) {
 	if req == nil {
 		return nil, false
 	}
-	value, ok := req.Attribute(attributeProfileContext)
+	value, ok := req.Attribute(attributeContext)
 	if !ok {
 		return nil, false
 	}
-	profile, ok := value.(*profileContext)
+	profile, ok := value.(*requestContext)
 	return profile, ok && profile != nil
 }
 

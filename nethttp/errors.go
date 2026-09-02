@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"goark.dev/arkhos/internal/deploy"
+	internalprofile "goark.dev/arkhos/internal/profile"
 )
 
 // ErrUnsupportedProfile 表示部署声明了当前 net/http 容器不支持的 Arkarta Profile。
@@ -19,7 +20,7 @@ var ErrNilApplication = errors.New("arkhos/nethttp: application is nil")
 var ErrNilListener = errors.New("arkhos/nethttp: listener is nil")
 
 // ErrSessionProfileUnavailable 表示当前请求没有可用 Session Profile。
-var ErrSessionProfileUnavailable = errors.New("arkhos/nethttp: session profile unavailable")
+var ErrSessionProfileUnavailable = internalprofile.ErrSessionUnavailable
 
 // ErrMultipartProfileUnavailable 表示当前请求没有可用 Multipart Profile。
-var ErrMultipartProfileUnavailable = errors.New("arkhos/nethttp: multipart profile unavailable")
+var ErrMultipartProfileUnavailable = internalprofile.ErrMultipartUnavailable

@@ -1,4 +1,4 @@
-package nethttp
+package hertz
 
 import (
 	"context"

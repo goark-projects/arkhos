@@ -1,4 +1,4 @@
-package nethttp
+package hertz
 
 import (
 	internalprofile "goark.dev/arkhos/internal/profile"
@@ -7,7 +7,7 @@ import (
 	"goark.dev/arkarta/servlet/multipart"
 )
 
-// ContainerOption 定制 Arkhos net/http 容器。
+// ContainerOption 定制 Arkhos Hertz 容器。
 type ContainerOption func(*internalprofile.Config)
 
 // WithSessionManagerFactory 设置每个 WebApp 的会话管理器工厂。
@@ -43,19 +43,19 @@ func WithSecurityPolicy(policy SecurityPolicy) ContainerOption {
 }
 
 // WithAsyncOptions 设置容器创建异步上下文时追加的默认选项。
-func WithAsyncOptions(asyncOptions ...async.Option) ContainerOption {
-	copied := append([]async.Option(nil), asyncOptions...)
-	return func(options *internalprofile.Config) {
-		options.AsyncOptions = append(options.AsyncOptions, copied...)
+func WithAsyncOptions(options ...async.Option) ContainerOption {
+	copied := append([]async.Option(nil), options...)
+	return func(config *internalprofile.Config) {
+		config.AsyncOptions = append(config.AsyncOptions, copied...)
 	}
 }
 
 func buildContainerOptions(options []ContainerOption) internalprofile.Config {
-	cfg := internalprofile.DefaultConfig()
+	config := internalprofile.DefaultConfig()
 	for _, option := range options {
 		if option != nil {
-			option(&cfg)
+			option(&config)
 		}
 	}
-	return cfg
+	return config
 }

@@ -1,4 +1,4 @@
-package nethttp
+package hertz
 
 import (
 	internalprofile "goark.dev/arkhos/internal/profile"
