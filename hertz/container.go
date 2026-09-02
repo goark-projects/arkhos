@@ -1,0 +1,91 @@
+package hertz
+
+import (
+	"context"
+
+	"github.com/cloudwego/hertz/pkg/app"
+	"github.com/cloudwego/hertz/pkg/protocol/consts"
+
+	internalcontainer "goark.dev/arkhos/internal/container"
+
+	servletcontainer "goark.dev/arkarta/servlet/container"
+	"goark.dev/arkarta/servlet/nativeio"
+)
+
+// Container 是基于 Hertz 的 Arkhos Servlet 容器。
+type Container struct {
+	runtime *internalcontainer.Runtime
+	sender  nativeio.Sender
+}
+
+// NewContainer 创建 Arkhos Hertz 容器。
+func NewContainer() *Container {
+	return &Container{
+		runtime: internalcontainer.NewRuntime(defaultMetadata()),
+		sender:  nativeio.NewStandardSender(),
+	}
+}
+
+func (c *Container) Metadata() servletcontainer.Metadata {
+	if c == nil || c.runtime == nil {
+		return servletcontainer.Metadata{}
+	}
+	return c.runtime.Metadata()
+}
+
+func (c *Container) NativeSender() nativeio.Sender {
+	if c == nil || c.sender == nil {
+		return nativeio.NewStandardSender()
+	}
+	return c.sender
+}
+
+func (c *Container) Deploy(ctx context.Context, deployment *servletcontainer.Deployment) (servletcontainer.Application, error) {
+	if c == nil || c.runtime == nil {
+		return nil, ErrNilContainer
+	}
+	return c.runtime.Deploy(ctx, deployment)
+}
+
+func (c *Container) Start(ctx context.Context) error {
+	if c == nil || c.runtime == nil {
+		return ErrNilContainer
+	}
+	return c.runtime.Start(ctx)
+}
+
+func (c *Container) Shutdown(ctx context.Context) error {
+	if c == nil || c.runtime == nil {
+		return nil
+	}
+	return c.runtime.Shutdown(ctx)
+}
+
+// Handler 返回容器聚合后的 Hertz Handler。
+func (c *Container) Handler() app.HandlerFunc {
+	return func(ctx context.Context, requestContext *app.RequestContext) {
+		if c == nil || c.runtime == nil {
+			requestContext.SetStatusCode(consts.StatusServiceUnavailable)
+			return
+		}
+		path := string(requestContext.Path())
+		application, status := c.runtime.MatchApplication(path)
+		switch status {
+		case internalcontainer.MatchFound:
+			serve(ctx, requestContext, application.Handler(), application.WebApp().ContextPath(), nil)
+		case internalcontainer.MatchUnavailable:
+			requestContext.SetStatusCode(consts.StatusServiceUnavailable)
+		default:
+			requestContext.SetStatusCode(consts.StatusNotFound)
+		}
+	}
+}
+
+func defaultMetadata() servletcontainer.Metadata {
+	return servletcontainer.NewMetadata(
+		Name,
+		Version,
+		[]servletcontainer.Profile{servletcontainer.ProfileCore, servletcontainer.ProfileNativeIO},
+		map[string]string{"arkarta": "v0.0.1", "transport": "hertz"},
+	)
+}
