@@ -15,13 +15,14 @@ func Handler(handler servlet.Handler, options ...arkartanethttp.Option) http.Han
 }
 
 // ApplicationHandler 将已部署应用适配为标准库 http.Handler。
-func ApplicationHandler(application servletcontainer.Application) http.Handler {
+func ApplicationHandler(application servletcontainer.Application, requestOptions ...servlet.RequestOption) http.Handler {
 	if application == nil || application.WebApp() == nil {
 		return unavailableHandler()
 	}
 	return Handler(
 		application.Handler(),
 		arkartanethttp.WithRequestContextPath(application.WebApp().ContextPath()),
+		arkartanethttp.WithRequestOptions(requestOptions...),
 	)
 }
 

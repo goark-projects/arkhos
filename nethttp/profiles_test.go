@@ -139,6 +139,32 @@ func TestMultipartProfileParsesRequestWithContainerParser(t *testing.T) {
 	}
 }
 
+func TestContainerAppliesFormBodyLimit(t *testing.T) {
+	container := NewContainer(WithMaxFormBodySize(4))
+	handler := servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+		if err := req.ParseParameters(); errors.Is(err, servlet.ErrFormBodyTooLarge) {
+			_, writeErr := res.WriteString("limited")
+			return writeErr
+		} else if err != nil {
+			return err
+		}
+		_, err := res.WriteString("accepted")
+		return err
+	})
+	deployProfileApp(t, container, "form-limit", handler)
+	if err := container.Start(context.Background()); err != nil {
+		t.Fatalf("Start failed: %v", err)
+	}
+
+	request := httptest.NewRequest(http.MethodPost, "/form", strings.NewReader("field=value"))
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	recorder := httptest.NewRecorder()
+	container.Handler().ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK || recorder.Body.String() != "limited" {
+		t.Fatalf("response = %d/%q, want 200/limited", recorder.Code, recorder.Body.String())
+	}
+}
+
 func TestMultipartProfileCleansUpWhenSecurityPolicyStopsRequest(t *testing.T) {
 	location := t.TempDir()
 	container := NewContainer(

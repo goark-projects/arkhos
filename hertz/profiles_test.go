@@ -87,6 +87,28 @@ func TestMultipartProfileUsesHertzBody(t *testing.T) {
 	}
 }
 
+func TestContainerAppliesFormBodyLimit(t *testing.T) {
+	container := NewContainer(WithMaxFormBodySize(4))
+	deployHertzProfile(t, container, servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+		if err := req.ParseParameters(); errors.Is(err, servlet.ErrFormBodyTooLarge) {
+			_, writeErr := res.WriteString("limited")
+			return writeErr
+		} else if err != nil {
+			return err
+		}
+		_, err := res.WriteString("accepted")
+		return err
+	}))
+
+	ctx := newHertzRequest("POST", "/form")
+	ctx.Request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	ctx.Request.SetBodyString("field=value")
+	container.Handler()(t.Context(), ctx)
+	if ctx.Response.StatusCode() != consts.StatusOK || string(ctx.Response.Body()) != "limited" {
+		t.Fatalf("response = %d/%q, want 200/limited", ctx.Response.StatusCode(), ctx.Response.Body())
+	}
+}
+
 func TestSecurityProfileUsesHertzAuthorizationHeader(t *testing.T) {
 	realm := security.NewStaticRealm(security.WithStaticUser("alice", "secret", "orders"))
 	container := NewContainer(WithSecurityPolicy(BasicSecurityPolicy(

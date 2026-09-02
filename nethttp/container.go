@@ -8,14 +8,16 @@ import (
 	internalnethttp "goark.dev/arkhos/internal/nethttp"
 	internalprofile "goark.dev/arkhos/internal/profile"
 
+	"goark.dev/arkarta/servlet"
 	servletcontainer "goark.dev/arkarta/servlet/container"
 	"goark.dev/arkarta/servlet/nativeio"
 )
 
 // Container 是基于标准库 net/http 的 Arkhos Servlet 容器。
 type Container struct {
-	runtime *internalcontainer.Runtime
-	sender  nativeio.Sender
+	runtime        *internalcontainer.Runtime
+	sender         nativeio.Sender
+	requestOptions []servlet.RequestOption
 }
 
 // profileSecurity 与 Arkarta Servlet Security Profile 标准值保持一致。
@@ -28,10 +30,11 @@ func NewContainer(options ...ContainerOption) *Container {
 		runtime: internalcontainer.NewRuntime(
 			defaultMetadata(),
 			internalcontainer.WithApplicationDecorator(func(application servletcontainer.Application) (servletcontainer.Application, error) {
-				return internalprofile.Decorate(application, cfg)
+				return internalprofile.Decorate(application, cfg.profiles)
 			}),
 		),
-		sender: nativeio.NewStandardSender(),
+		sender:         nativeio.NewStandardSender(),
+		requestOptions: append([]servlet.RequestOption(nil), cfg.requestOptions...),
 	}
 }
 
@@ -89,7 +92,7 @@ func (c *Container) Handler() http.Handler {
 		application, status := c.runtime.MatchApplication(request.URL.Path)
 		switch status {
 		case internalcontainer.MatchFound:
-			internalnethttp.ApplicationHandler(application).ServeHTTP(writer, request)
+			internalnethttp.ApplicationHandler(application, c.requestOptions...).ServeHTTP(writer, request)
 		case internalcontainer.MatchUnavailable:
 			http.Error(writer, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		default:

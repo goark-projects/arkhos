@@ -9,14 +9,16 @@ import (
 	internalcontainer "goark.dev/arkhos/internal/container"
 	internalprofile "goark.dev/arkhos/internal/profile"
 
+	"goark.dev/arkarta/servlet"
 	servletcontainer "goark.dev/arkarta/servlet/container"
 	"goark.dev/arkarta/servlet/nativeio"
 )
 
 // Container 是基于 Hertz 的 Arkhos Servlet 容器。
 type Container struct {
-	runtime *internalcontainer.Runtime
-	sender  nativeio.Sender
+	runtime        *internalcontainer.Runtime
+	sender         nativeio.Sender
+	requestOptions []servlet.RequestOption
 }
 
 // NewContainer 创建 Arkhos Hertz 容器。
@@ -26,10 +28,11 @@ func NewContainer(options ...ContainerOption) *Container {
 		runtime: internalcontainer.NewRuntime(
 			defaultMetadata(),
 			internalcontainer.WithApplicationDecorator(func(application servletcontainer.Application) (servletcontainer.Application, error) {
-				return internalprofile.Decorate(application, config)
+				return internalprofile.Decorate(application, config.profiles)
 			}),
 		),
-		sender: nativeio.NewStandardSender(),
+		sender:         nativeio.NewStandardSender(),
+		requestOptions: append([]servlet.RequestOption(nil), config.requestOptions...),
 	}
 }
 
@@ -84,7 +87,7 @@ func (c *Container) Handler() app.HandlerFunc {
 		application, status := c.runtime.MatchApplication(path)
 		switch status {
 		case internalcontainer.MatchFound:
-			serve(ctx, requestContext, application.Handler(), application.WebApp().ContextPath(), nil)
+			serve(ctx, requestContext, application.Handler(), application.WebApp().ContextPath(), c.requestOptions)
 		case internalcontainer.MatchUnavailable:
 			requestContext.SetStatusCode(consts.StatusServiceUnavailable)
 		default:
