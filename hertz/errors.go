@@ -11,6 +11,8 @@ var (
 	ErrNilApplication = errors.New("arkhos/hertz: application is nil")
 	// ErrNilContainer 表示容器实例为空。
 	ErrNilContainer = errors.New("arkhos/hertz: container is nil")
+	// ErrNilListener 表示 Serve 缺少网络监听器。
+	ErrNilListener = errors.New("arkhos/hertz: listener is nil")
 )
 
 var (
