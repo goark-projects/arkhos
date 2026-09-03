@@ -27,15 +27,13 @@ func TestContainerMetadataDeclaresVerifiedProfiles(t *testing.T) {
 		servletcontainer.ProfileSession,
 		servletcontainer.ProfileMultipart,
 		servletcontainer.ProfileAsyncStream,
+		servletcontainer.ProfileUpgrade,
 		servletcontainer.ProfileNativeIO,
 		profileSecurity,
 	} {
 		if !metadata.Supports(profile) {
 			t.Fatalf("metadata should support %q", profile)
 		}
-	}
-	if metadata.Supports(servletcontainer.ProfileUpgrade) {
-		t.Fatal("upgrade must not be declared before Hertz upgrade tests pass")
 	}
 }
 

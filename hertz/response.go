@@ -17,6 +17,7 @@ type response struct {
 }
 
 func newResponse(ctx *app.RequestContext) *response {
+	ctx.Response.Header.SetNoDefaultContentType(true)
 	return &response{
 		ctx:    ctx,
 		header: responseHeader{header: &ctx.Response.Header},

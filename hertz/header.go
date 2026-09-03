@@ -32,13 +32,16 @@ func (h requestHeader) Has(name string) bool {
 	return found
 }
 
-func (h requestHeader) Set(string, string) {
+func (h requestHeader) Set(name, value string) {
+	h.header.Set(name, value)
 }
 
-func (h requestHeader) Add(string, string) {
+func (h requestHeader) Add(name, value string) {
+	h.header.Add(name, value)
 }
 
-func (h requestHeader) Delete(string) {
+func (h requestHeader) Delete(name string) {
+	h.header.Del(name)
 }
 
 func (h requestHeader) Visit(visitor func(name, value string) bool) {

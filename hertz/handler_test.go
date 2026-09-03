@@ -23,6 +23,8 @@ func TestHandlerBridgesRequestAndResponse(t *testing.T) {
 			return err
 		}
 		res.SetStatus(consts.StatusCreated)
+		req.Header().Set("Content-Type", "application/json; charset=utf-8")
+		res.Header().Set("Content-Type", "text/csv")
 		res.Header().Set("X-Result", req.Header().Get("X-Trace-ID"))
 		_, err = res.WriteString(cookie.Value + ":" + string(body))
 		return err
@@ -42,8 +44,30 @@ func TestHandlerBridgesRequestAndResponse(t *testing.T) {
 	if got := string(ctx.Response.Header.Peek("X-Result")); got != "trace-1" {
 		t.Fatalf("X-Result = %q", got)
 	}
+	if got := string(ctx.Response.Header.ContentType()); got != "text/csv" {
+		t.Fatalf("Content-Type = %q, want text/csv", got)
+	}
+	if got := string(ctx.Request.Header.ContentType()); got != "application/json; charset=utf-8" {
+		t.Fatalf("request Content-Type = %q, want mutated value", got)
+	}
 	if got := string(ctx.Response.Body()); got != "session-1:payload" {
 		t.Fatalf("body = %q", got)
+	}
+}
+
+func TestHandlerSeparatesRequestURIFromQueryString(t *testing.T) {
+	handler := Handler(servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+		_, err := res.WriteString(req.RequestURI() + "|" + req.QueryString())
+		return err
+	}))
+	ctx := app.NewContext(0)
+	ctx.Request.Header.SetMethod("GET")
+	ctx.Request.SetRequestURI("/orders/42?mode=full")
+
+	handler(t.Context(), ctx)
+
+	if got := string(ctx.Response.Body()); got != "/orders/42|mode=full" {
+		t.Fatalf("request URI/query = %q, want separated values", got)
 	}
 }
 

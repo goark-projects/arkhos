@@ -105,6 +105,7 @@ func defaultMetadata() servletcontainer.Metadata {
 			servletcontainer.ProfileSession,
 			servletcontainer.ProfileMultipart,
 			servletcontainer.ProfileAsyncStream,
+			servletcontainer.ProfileUpgrade,
 			servletcontainer.ProfileNativeIO,
 			profileSecurity,
 		},

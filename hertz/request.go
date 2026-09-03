@@ -13,6 +13,13 @@ import (
 func newRequest(ctx context.Context, requestContext *app.RequestContext, contextPath string, options ...servlet.RequestOption) (*servlet.Request, error) {
 	request := &requestContext.Request
 	uri := request.URI()
+	requestURI := uri.PathOriginal()
+	if len(requestURI) == 0 {
+		requestURI = uri.Path()
+	}
+	if len(requestURI) == 0 {
+		requestURI = []byte("/")
+	}
 	var body io.Reader
 	if request.IsBodyStream() {
 		body = request.BodyStream()
@@ -25,7 +32,7 @@ func newRequest(ctx context.Context, requestContext *app.RequestContext, context
 		Protocol:      request.Header.GetProtocol(),
 		Scheme:        string(uri.Scheme()),
 		Host:          string(uri.Host()),
-		RequestURI:    string(uri.RequestURI()),
+		RequestURI:    string(requestURI),
 		Path:          string(uri.Path()),
 		QueryString:   string(uri.QueryString()),
 		ContextPath:   contextPath,
