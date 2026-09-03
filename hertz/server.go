@@ -10,14 +10,18 @@ import (
 	"github.com/cloudwego/hertz/pkg/app"
 	hertzserver "github.com/cloudwego/hertz/pkg/app/server"
 	"github.com/cloudwego/hertz/pkg/common/config"
+	"github.com/cloudwego/hertz/pkg/network"
 	"github.com/cloudwego/hertz/pkg/network/standard"
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
+
+	internaltransport "goark.dev/arkhos/hertz/internal/transport"
 )
 
 // Server 将 Arkhos 容器绑定到 Hertz HTTP Server。
 type Server struct {
 	container *Container
 	options   serverOptions
+	tracker   *internaltransport.Tracker
 
 	mu     sync.RWMutex
 	engine *hertzserver.Hertz
@@ -28,7 +32,11 @@ func NewServer(container *Container, options ...ServerOption) (*Server, error) {
 	if container == nil {
 		return nil, ErrNilContainer
 	}
-	return &Server{container: container, options: buildServerOptions(options)}, nil
+	return &Server{
+		container: container,
+		options:   buildServerOptions(options),
+		tracker:   internaltransport.NewTracker(),
+	}, nil
 }
 
 // Handler 返回容器聚合后的 Hertz Handler。
@@ -81,6 +89,7 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	engine := s.Hertz()
 	var engineErr error
 	if engine != nil && engine.IsRunning() {
+		s.tracker.BeginShutdown()
 		engineErr = engine.Shutdown(ctx)
 	}
 	return errors.Join(engineErr, s.container.Shutdown(ctx))
@@ -103,7 +112,8 @@ func (s *Server) serve(ctx context.Context, listener net.Listener) error {
 	go func() {
 		errCh <- engine.Run()
 	}()
-	if err := waitHertzRunning(engine, errCh); err != nil {
+	running, err := waitHertzRunning(engine, errCh)
+	if !running {
 		return errors.Join(err, s.container.Shutdown(context.Background()))
 	}
 	select {
@@ -119,15 +129,28 @@ func (s *Server) serve(ctx context.Context, listener net.Listener) error {
 func (s *Server) newEngine(listener net.Listener) *hertzserver.Hertz {
 	options := s.options.hertzOptions()
 	if listener == nil {
-		options = append(options, platformTransportOptions()...)
+		options = append(options, platformTransportOptions(s.tracker)...)
 	} else {
 		options = append(options,
 			hertzserver.WithListener(listener),
-			hertzserver.WithTransport(standard.NewTransporter),
+			hertzserver.WithTransport(func(options *config.Options) network.Transporter {
+				return s.tracker.Wrap(standard.NewTransporter(options))
+			}),
 		)
 	}
 	engine := hertzserver.New(options...)
-	handler := s.container.Handler()
+	containerHandler := s.container.Handler()
+	handler := func(ctx context.Context, requestContext *app.RequestContext) {
+		conn := internaltransport.FromContext(ctx)
+		if conn != nil {
+			conn.BeginRequest()
+			defer conn.FinishRequest()
+			if s.tracker.Draining() {
+				requestContext.SetConnectionClose()
+			}
+		}
+		containerHandler(ctx, requestContext)
+	}
 	engine.Any("/*path", handler)
 	engine.NoRoute(handler)
 	return engine
@@ -162,17 +185,17 @@ func (o serverOptions) hertzOptions() []config.Option {
 	return options
 }
 
-func waitHertzRunning(engine *hertzserver.Hertz, errCh <-chan error) error {
+func waitHertzRunning(engine *hertzserver.Hertz, errCh <-chan error) (bool, error) {
 	ticker := time.NewTicker(time.Millisecond)
 	defer ticker.Stop()
 	for !engine.IsRunning() {
 		select {
 		case err := <-errCh:
-			return err
+			return false, err
 		case <-ticker.C:
 		}
 	}
-	return nil
+	return true, nil
 }
 
 func normalizeServerContext(ctx context.Context) context.Context {

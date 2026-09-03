@@ -2,8 +2,17 @@
 
 package hertz
 
-import "github.com/cloudwego/hertz/pkg/common/config"
+import (
+	hertzserver "github.com/cloudwego/hertz/pkg/app/server"
+	"github.com/cloudwego/hertz/pkg/common/config"
+	"github.com/cloudwego/hertz/pkg/network"
+	"github.com/cloudwego/hertz/pkg/network/netpoll"
 
-func platformTransportOptions() []config.Option {
-	return nil
+	internaltransport "goark.dev/arkhos/hertz/internal/transport"
+)
+
+func platformTransportOptions(tracker *internaltransport.Tracker) []config.Option {
+	return []config.Option{hertzserver.WithTransport(func(options *config.Options) network.Transporter {
+		return tracker.Wrap(netpoll.NewTransporter(options))
+	})}
 }

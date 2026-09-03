@@ -6,6 +6,11 @@
 
 ## [Unreleased]
 
+### 修复
+
+- 修复空闲 HTTP keep-alive 连接导致优雅关闭耗尽全部超时的问题，同时保证正在处理的请求能够完成。
+- 修复快速启停时 Hertz 退出结果可能在 Server 等待循环前被消费的竞态。
+
 ### Added
 
 - 初始化 Arkhos 仓库，加入 Apache License 2.0、Go module 元数据、双语文档，以及面向 Arkarta `v0.0.1` 实现工作的首批包结构。

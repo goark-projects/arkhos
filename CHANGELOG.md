@@ -6,6 +6,11 @@ All notable changes to Arkhos are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed graceful shutdown with idle HTTP keep-alive connections so active requests can finish without consuming the entire shutdown deadline.
+- Fixed a rapid start/stop race that could consume the Hertz exit result before the server wait loop observed it.
+
 ### Added
 
 - Initialized the Arkhos repository with Apache License 2.0, Go module metadata, bilingual documentation, and the first package layout for Arkarta `v0.0.1` implementation work.

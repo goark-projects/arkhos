@@ -93,6 +93,160 @@ func TestServerServeStartsContainerAndShutsDown(t *testing.T) {
 	}
 }
 
+func TestServerShutdownClosesIdleKeepAliveConnections(t *testing.T) {
+	container := NewContainer()
+	app, err := servlet.NewWebApp("keep-alive")
+	if err != nil {
+		t.Fatalf("NewWebApp failed: %v", err)
+	}
+	deployment, err := servletcontainer.NewDeployment(app,
+		servletcontainer.WithMapping("/", servlet.HandlerFunc(func(_ context.Context, _ *servlet.Request, res servlet.Response) error {
+			_, err := res.WriteString("served")
+			return err
+		})),
+	)
+	if err != nil {
+		t.Fatalf("NewDeployment failed: %v", err)
+	}
+	if _, err := container.Deploy(t.Context(), deployment); err != nil {
+		t.Fatalf("Deploy failed: %v", err)
+	}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen failed: %v", err)
+	}
+	defer listener.Close()
+	server, err := NewServer(container)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- server.Serve(context.Background(), listener)
+	}()
+
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	client := &http.Client{Transport: transport, Timeout: time.Second}
+	response, err := client.Get("http://" + listener.Addr().String() + "/")
+	if err != nil {
+		t.Fatalf("GET failed: %v", err)
+	}
+	if _, err := io.Copy(io.Discard, response.Body); err != nil {
+		t.Fatalf("read response failed: %v", err)
+	}
+	if err := response.Body.Close(); err != nil {
+		t.Fatalf("close response failed: %v", err)
+	}
+	defer transport.CloseIdleConnections()
+
+	started := time.Now()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		t.Fatalf("Shutdown failed: %v", err)
+	}
+	if elapsed := time.Since(started); elapsed >= 250*time.Millisecond {
+		t.Fatalf("Shutdown elapsed = %s, want < 250ms", elapsed)
+	}
+	select {
+	case err := <-errCh:
+		if err != nil {
+			t.Fatalf("Serve failed: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Serve did not return after shutdown")
+	}
+}
+
+func TestServerShutdownWaitsForActiveRequest(t *testing.T) {
+	container := NewContainer()
+	requestStarted := make(chan struct{})
+	releaseRequest := make(chan struct{})
+	app, err := servlet.NewWebApp("graceful")
+	if err != nil {
+		t.Fatalf("NewWebApp failed: %v", err)
+	}
+	deployment, err := servletcontainer.NewDeployment(app,
+		servletcontainer.WithMapping("/", servlet.HandlerFunc(func(_ context.Context, _ *servlet.Request, res servlet.Response) error {
+			close(requestStarted)
+			<-releaseRequest
+			_, err := res.WriteString("completed")
+			return err
+		})),
+	)
+	if err != nil {
+		t.Fatalf("NewDeployment failed: %v", err)
+	}
+	if _, err := container.Deploy(t.Context(), deployment); err != nil {
+		t.Fatalf("Deploy failed: %v", err)
+	}
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen failed: %v", err)
+	}
+	defer listener.Close()
+	server, err := NewServer(container)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	serveErrCh := make(chan error, 1)
+	go func() {
+		serveErrCh <- server.Serve(context.Background(), listener)
+	}()
+	responseCh := make(chan string, 1)
+	requestErrCh := make(chan error, 1)
+	go func() {
+		response, requestErr := http.Get("http://" + listener.Addr().String() + "/")
+		if requestErr != nil {
+			requestErrCh <- requestErr
+			return
+		}
+		defer response.Body.Close()
+		body, readErr := io.ReadAll(response.Body)
+		if readErr != nil {
+			requestErrCh <- readErr
+			return
+		}
+		responseCh <- string(body)
+	}()
+	select {
+	case <-requestStarted:
+	case <-time.After(time.Second):
+		t.Fatal("request handler did not start")
+	}
+
+	shutdownErrCh := make(chan error, 1)
+	go func() {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		shutdownErrCh <- server.Shutdown(shutdownCtx)
+	}()
+	select {
+	case err := <-shutdownErrCh:
+		t.Fatalf("Shutdown returned before active request completed: %v", err)
+	case <-time.After(25 * time.Millisecond):
+	}
+	close(releaseRequest)
+	select {
+	case err := <-requestErrCh:
+		t.Fatalf("request failed during shutdown: %v", err)
+	case body := <-responseCh:
+		if body != "completed" {
+			t.Fatalf("body = %q, want completed", body)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("request did not complete during shutdown")
+	}
+	if err := <-shutdownErrCh; err != nil {
+		t.Fatalf("Shutdown failed: %v", err)
+	}
+	if err := <-serveErrCh; err != nil {
+		t.Fatalf("Serve failed: %v", err)
+	}
+}
+
 func requestHertzUntilOK(t *testing.T, target string) string {
 	t.Helper()
 	client := &http.Client{Transport: &http.Transport{DisableKeepAlives: true}}
