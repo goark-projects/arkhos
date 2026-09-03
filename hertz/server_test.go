@@ -84,6 +84,9 @@ func TestServerServeStartsContainerAndShutsDown(t *testing.T) {
 	if body != "served" {
 		t.Fatalf("body = %q, want served", body)
 	}
+	if !server.Running() {
+		t.Fatal("server should report running after serving a request")
+	}
 	cancel()
 	if err := <-errCh; !errors.Is(err, context.Canceled) {
 		t.Fatalf("Serve err = %v, want context.Canceled", err)

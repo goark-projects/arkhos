@@ -67,6 +67,12 @@ func (s *Server) Hertz() *hertzserver.Hertz {
 	return s.engine
 }
 
+// Running 返回底层 Hertz Engine 是否已进入可服务状态。
+func (s *Server) Running() bool {
+	engine := s.Hertz()
+	return engine != nil && engine.IsRunning()
+}
+
 // ListenAndServe 启动默认监听，并在 ctx 取消时优雅关闭。
 func (s *Server) ListenAndServe(ctx context.Context) error {
 	return s.serve(ctx, nil)
