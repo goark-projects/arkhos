@@ -59,7 +59,7 @@ func WithAsyncOptions(options ...async.Option) ContainerOption {
 // WithMaxFormBodySize 设置 URL 编码表单体解析上限。
 func WithMaxFormBodySize(size int64) ContainerOption {
 	return func(config *containerOptions) {
-		if size > 0 {
+		if size != 0 {
 			config.requestOptions = append(config.requestOptions, servlet.WithMaxFormBodySize(size))
 		}
 	}

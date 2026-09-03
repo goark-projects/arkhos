@@ -198,10 +198,10 @@ func (o serverOptions) hertzOptions() []config.Option {
 	if o.exitWaitTimeout > 0 {
 		options = append(options, hertzserver.WithExitWaitTime(o.exitWaitTimeout))
 	}
-	if o.maxHeaderBytes > 0 {
+	if o.maxHeaderBytes != 0 {
 		options = append(options, hertzserver.WithMaxHeaderBytes(o.maxHeaderBytes))
 	}
-	if o.maxRequestBodySize > 0 {
+	if o.maxRequestBodySize != 0 {
 		options = append(options, hertzserver.WithMaxRequestBodySize(o.maxRequestBodySize))
 	}
 	return options

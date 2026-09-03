@@ -46,6 +46,20 @@ func TestNewServerAppliesOptions(t *testing.T) {
 	}
 }
 
+func TestNewServer_whenLimitsAreUnlimited_shouldPassSentinelToHertz(t *testing.T) {
+	server, err := NewServer(NewContainer(),
+		WithMaxHeaderBytes(-1),
+		WithMaxRequestBodySize(-1),
+	)
+	if err != nil {
+		t.Fatalf("NewServer failed: %v", err)
+	}
+	options := server.newEngine(nil).GetOptions()
+	if options.MaxHeaderBytes != -1 || options.MaxRequestBodySize != -1 {
+		t.Fatalf("Hertz limits = header %d/body %d, want -1/-1", options.MaxHeaderBytes, options.MaxRequestBodySize)
+	}
+}
+
 func TestServerServeStartsContainerAndShutsDown(t *testing.T) {
 	container := NewContainer()
 	app, err := servlet.NewWebApp("orders")

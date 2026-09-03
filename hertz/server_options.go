@@ -87,7 +87,7 @@ func WithExitWaitTimeout(timeout time.Duration) ServerOption {
 // WithMaxHeaderBytes 设置请求头最大字节数。
 func WithMaxHeaderBytes(size int) ServerOption {
 	return func(options *serverOptions) {
-		if size > 0 {
+		if size != 0 {
 			options.maxHeaderBytes = size
 		}
 	}
@@ -96,7 +96,7 @@ func WithMaxHeaderBytes(size int) ServerOption {
 // WithMaxRequestBodySize 设置整个请求体最大字节数。
 func WithMaxRequestBodySize(size int) ServerOption {
 	return func(options *serverOptions) {
-		if size > 0 {
+		if size != 0 {
 			options.maxRequestBodySize = size
 		}
 	}

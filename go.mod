@@ -2,7 +2,7 @@ module goark.dev/arkhos
 
 go 1.25
 
-require goark.dev/arkarta v0.0.2-0.20260903014600-5fb9454949e6
+require goark.dev/arkarta v0.0.3-0.20260903182219-45ebc42e54af
 
 require github.com/cloudwego/hertz v0.10.6
 
