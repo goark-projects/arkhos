@@ -101,6 +101,22 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return errors.Join(engineErr, s.container.Shutdown(ctx))
 }
 
+// Close 立即关闭 Hertz Server 的监听器和活动连接，并停止全部已部署应用。
+func (s *Server) Close() error {
+	if s == nil || s.container == nil {
+		return ErrNilContainer
+	}
+	engine := s.Hertz()
+	var engineErr error
+	if engine != nil {
+		engineErr = engine.Close()
+		if errors.Is(engineErr, context.DeadlineExceeded) {
+			engineErr = nil
+		}
+	}
+	return errors.Join(s.tracker.Close(), engineErr, s.container.Shutdown(context.Background()))
+}
+
 func (s *Server) serve(ctx context.Context, listener net.Listener) error {
 	if s == nil || s.container == nil {
 		return ErrNilContainer

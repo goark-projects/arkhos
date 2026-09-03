@@ -3,6 +3,7 @@ package transport
 
 import (
 	"context"
+	"errors"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -52,6 +53,25 @@ func (t *Tracker) BeginShutdown() {
 	for _, conn := range idle {
 		_ = conn.Close()
 	}
+}
+
+// Close 立即关闭当前跟踪的全部连接。
+func (t *Tracker) Close() error {
+	if t == nil {
+		return nil
+	}
+	t.draining.Store(true)
+	t.mu.Lock()
+	connections := make([]*Connection, 0, len(t.conns))
+	for conn := range t.conns {
+		connections = append(connections, conn)
+	}
+	t.mu.Unlock()
+	var err error
+	for _, conn := range connections {
+		err = errors.Join(err, conn.Close())
+	}
+	return err
 }
 
 // Draining 报告 Server 是否正在排空连接。

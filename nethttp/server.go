@@ -100,6 +100,14 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	return errors.Join(s.httpServer.Shutdown(ctx), s.container.Shutdown(ctx))
 }
 
+// Close 立即关闭 HTTP Server 的监听器和活动连接，并停止所有已部署应用。
+func (s *Server) Close() error {
+	if s == nil || s.container == nil || s.httpServer == nil {
+		return ErrNilContainer
+	}
+	return errors.Join(s.httpServer.Close(), s.container.Shutdown(context.Background()))
+}
+
 func (s *Server) wait(ctx context.Context, errCh <-chan error) error {
 	select {
 	case err := <-errCh:
