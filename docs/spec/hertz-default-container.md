@@ -6,7 +6,7 @@
 
 ## 技术栈
 
-- Go 1.25 语言基线；Windows 和 Debian 使用当前项目工具链复验。
+- Go 1.26 语言基线；Windows 和 Debian 使用当前项目工具链复验。
 - `goark.dev/arkarta`：传输层中立 Servlet 标准和 TCK。
 - `github.com/cloudwego/hertz v0.10.6`：默认 HTTP 引擎。
 - `github.com/cloudwego/netpoll v0.7.5`：非 Windows 默认网络传输。
