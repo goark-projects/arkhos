@@ -14,7 +14,11 @@ func TestHandlerCoreTCK(t *testing.T) {
 	tck.RunCore(t, tck.DriverFunc(exchangeTCKRequest))
 }
 
-func exchangeTCKRequest(ctx context.Context, handler servlet.Handler, request tck.Request) (tck.Response, error) {
+func exchangeTCKRequest(
+	ctx context.Context,
+	handler servlet.Handler,
+	request tck.Request,
+) (tck.Response, error) {
 	requestContext := app.NewContext(0)
 	requestContext.Request.Header.SetMethod(request.Method)
 	requestContext.Request.SetRequestURI(request.Target)

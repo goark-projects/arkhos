@@ -12,7 +12,9 @@ import (
 )
 
 func platformTransportOptions(tracker *internaltransport.Tracker) []config.Option {
-	return []config.Option{hertzserver.WithTransport(func(options *config.Options) network.Transporter {
-		return tracker.Wrap(netpoll.NewTransporter(options))
-	})}
+	return []config.Option{
+		hertzserver.WithTransport(func(options *config.Options) network.Transporter {
+			return tracker.Wrap(netpoll.NewTransporter(options))
+		}),
+	}
 }

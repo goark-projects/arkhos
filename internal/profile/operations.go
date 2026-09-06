@@ -9,7 +9,12 @@ import (
 	"goark.dev/arkarta/servlet/session"
 )
 
-func GetSession(ctx context.Context, req *servlet.Request, res servlet.Response, create bool) (session.Session, bool, error) {
+func GetSession(
+	ctx context.Context,
+	req *servlet.Request,
+	res servlet.Response,
+	create bool,
+) (session.Session, bool, error) {
 	profile, ok := current(req)
 	if !ok || profile.sessionAccessor == nil {
 		return nil, false, ErrSessionUnavailable
@@ -33,7 +38,11 @@ func RequestedSessionIDValid(ctx context.Context, req *servlet.Request) (bool, e
 	return profile.sessionAccessor.RequestedIDValid(ctx, req)
 }
 
-func ChangeSessionID(ctx context.Context, req *servlet.Request, res servlet.Response) (string, error) {
+func ChangeSessionID(
+	ctx context.Context,
+	req *servlet.Request,
+	res servlet.Response,
+) (string, error) {
 	profile, ok := current(req)
 	if !ok || profile.sessionAccessor == nil {
 		return "", ErrSessionUnavailable
@@ -81,7 +90,12 @@ func MultipartParts(req *servlet.Request) ([]multipart.Part, error) {
 	return multipart.Parts(req, profile.multipartParser)
 }
 
-func StartAsync(ctx context.Context, req *servlet.Request, res servlet.Response, options ...async.Option) (*async.Context, error) {
+func StartAsync(
+	ctx context.Context,
+	req *servlet.Request,
+	res servlet.Response,
+	options ...async.Option,
+) (*async.Context, error) {
 	profile, _ := current(req)
 	merged := make([]async.Option, 0, len(options))
 	if profile != nil {

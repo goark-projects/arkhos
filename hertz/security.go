@@ -13,7 +13,10 @@ type SecurityPolicy = internalprofile.SecurityPolicy
 type SecurityPolicyFunc = internalprofile.SecurityPolicyFunc
 
 // BasicSecurityPolicy 创建 Basic 认证加声明式约束策略。
-func BasicSecurityPolicy(authenticator security.Authenticator, constraint security.Constraint) SecurityPolicy {
+func BasicSecurityPolicy(
+	authenticator security.Authenticator,
+	constraint security.Constraint,
+) SecurityPolicy {
 	return internalprofile.BasicSecurityPolicy(authenticator, constraint)
 }
 

@@ -49,11 +49,17 @@ func TestServerServeStartsContainerAndShutsDown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewWebApp failed: %v", err)
 	}
-	deployment, err := servletcontainer.NewDeployment(app,
-		servletcontainer.WithMapping("/", servlet.HandlerFunc(func(_ context.Context, _ *servlet.Request, res servlet.Response) error {
-			_, err := res.WriteString("served")
-			return err
-		})),
+	deployment, err := servletcontainer.NewDeployment(
+		app,
+		servletcontainer.WithMapping(
+			"/",
+			servlet.HandlerFunc(
+				func(_ context.Context, _ *servlet.Request, res servlet.Response) error {
+					_, err := res.WriteString("served")
+					return err
+				},
+			),
+		),
 	)
 	if err != nil {
 		t.Fatalf("NewDeployment failed: %v", err)
@@ -101,12 +107,18 @@ func TestServerCloseDoesNotWaitForActiveRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewWebApp failed: %v", err)
 	}
-	deployment, err := servletcontainer.NewDeployment(app,
-		servletcontainer.WithMapping("/", servlet.HandlerFunc(func(_ context.Context, _ *servlet.Request, _ servlet.Response) error {
-			close(requestStarted)
-			<-releaseRequest
-			return nil
-		})),
+	deployment, err := servletcontainer.NewDeployment(
+		app,
+		servletcontainer.WithMapping(
+			"/",
+			servlet.HandlerFunc(
+				func(_ context.Context, _ *servlet.Request, _ servlet.Response) error {
+					close(requestStarted)
+					<-releaseRequest
+					return nil
+				},
+			),
+		),
 	)
 	if err != nil {
 		t.Fatalf("NewDeployment failed: %v", err)

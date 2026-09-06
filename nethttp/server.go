@@ -48,7 +48,11 @@ func (s *Server) HTTPServer() *http.Server {
 func (s *Server) Handler() http.Handler {
 	if s == nil || s.container == nil {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			http.Error(writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			http.Error(
+				writer,
+				http.StatusText(http.StatusInternalServerError),
+				http.StatusInternalServerError,
+			)
 		})
 	}
 	return s.container.Handler()

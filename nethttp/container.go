@@ -29,9 +29,11 @@ func NewContainer(options ...ContainerOption) *Container {
 	return &Container{
 		runtime: internalcontainer.NewRuntime(
 			defaultMetadata(),
-			internalcontainer.WithApplicationDecorator(func(application servletcontainer.Application) (servletcontainer.Application, error) {
-				return internalprofile.Decorate(application, cfg.profiles)
-			}),
+			internalcontainer.WithApplicationDecorator(
+				func(application servletcontainer.Application) (servletcontainer.Application, error) {
+					return internalprofile.Decorate(application, cfg.profiles)
+				},
+			),
 		),
 		sender:         nativeio.NewStandardSender(),
 		requestOptions: append([]servlet.RequestOption(nil), cfg.requestOptions...),
@@ -55,7 +57,10 @@ func (c *Container) NativeSender() nativeio.Sender {
 }
 
 // Deploy 部署 Web 应用。
-func (c *Container) Deploy(ctx context.Context, deployment *servletcontainer.Deployment) (servletcontainer.Application, error) {
+func (c *Container) Deploy(
+	ctx context.Context,
+	deployment *servletcontainer.Deployment,
+) (servletcontainer.Application, error) {
 	if c == nil || c.runtime == nil {
 		return nil, http.ErrServerClosed
 	}
@@ -86,15 +91,24 @@ func (c *Container) Handler() http.Handler {
 			return
 		}
 		if c == nil || c.runtime == nil {
-			http.Error(writer, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			http.Error(
+				writer,
+				http.StatusText(http.StatusServiceUnavailable),
+				http.StatusServiceUnavailable,
+			)
 			return
 		}
 		application, status := c.runtime.MatchApplication(request.URL.Path)
 		switch status {
 		case internalcontainer.MatchFound:
-			internalnethttp.ApplicationHandler(application, c.requestOptions...).ServeHTTP(writer, request)
+			internalnethttp.ApplicationHandler(application, c.requestOptions...).
+				ServeHTTP(writer, request)
 		case internalcontainer.MatchUnavailable:
-			http.Error(writer, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+			http.Error(
+				writer,
+				http.StatusText(http.StatusServiceUnavailable),
+				http.StatusServiceUnavailable,
+			)
 		default:
 			http.NotFound(writer, request)
 		}

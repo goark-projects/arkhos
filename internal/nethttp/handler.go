@@ -15,7 +15,10 @@ func Handler(handler servlet.Handler, options ...arkartanethttp.Option) http.Han
 }
 
 // ApplicationHandler 将已部署应用适配为标准库 http.Handler。
-func ApplicationHandler(application servletcontainer.Application, requestOptions ...servlet.RequestOption) http.Handler {
+func ApplicationHandler(
+	application servletcontainer.Application,
+	requestOptions ...servlet.RequestOption,
+) http.Handler {
 	if application == nil || application.WebApp() == nil {
 		return unavailableHandler()
 	}
@@ -28,6 +31,10 @@ func ApplicationHandler(application servletcontainer.Application, requestOptions
 
 func unavailableHandler() http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		http.Error(writer, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
+		http.Error(
+			writer,
+			http.StatusText(http.StatusServiceUnavailable),
+			http.StatusServiceUnavailable,
+		)
 	})
 }

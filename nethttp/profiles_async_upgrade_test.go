@@ -28,24 +28,26 @@ func TestAsyncProfileStartsContextWithContainerOptions(t *testing.T) {
 			events <- "complete"
 		},
 	})))
-	handler := servlet.HandlerFunc(func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
-		asyncCtx, err := StartAsync(ctx, req, res)
-		if err != nil {
-			return err
-		}
-		asyncCtx.Go(func(ctx context.Context) error {
-			stream, err := NewAsyncStream(res)
+	handler := servlet.HandlerFunc(
+		func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
+			asyncCtx, err := StartAsync(ctx, req, res)
 			if err != nil {
 				return err
 			}
-			if _, err := stream.Write(ctx, []byte("async")); err != nil {
-				return err
-			}
-			events <- "done"
-			return stream.Close(ctx)
-		})
-		return asyncCtx.Await(context.Background())
-	})
+			asyncCtx.Go(func(ctx context.Context) error {
+				stream, err := NewAsyncStream(res)
+				if err != nil {
+					return err
+				}
+				if _, err := stream.Write(ctx, []byte("async")); err != nil {
+					return err
+				}
+				events <- "done"
+				return stream.Close(ctx)
+			})
+			return asyncCtx.Await(context.Background())
+		},
+	)
 	deployProfileApp(t, container, "async", handler, servletcontainer.ProfileAsyncStream)
 	if err := container.Start(context.Background()); err != nil {
 		t.Fatalf("Start failed: %v", err)
@@ -64,13 +66,20 @@ func TestAsyncProfileStartsContextWithContainerOptions(t *testing.T) {
 }
 
 func TestUpgradeProfileDelegatesConnection(t *testing.T) {
-	handler := servlet.HandlerFunc(func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
-		return UpgradeHTTP(ctx, req, res, upgrade.HandlerFunc(func(_ context.Context, conn upgrade.Connection) error {
-			_, writeErr := conn.Write([]byte("upgraded\n"))
-			closeErr := conn.Close()
-			return errors.Join(writeErr, closeErr)
-		}))
-	})
+	handler := servlet.HandlerFunc(
+		func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
+			return UpgradeHTTP(
+				ctx,
+				req,
+				res,
+				upgrade.HandlerFunc(func(_ context.Context, conn upgrade.Connection) error {
+					_, writeErr := conn.Write([]byte("upgraded\n"))
+					closeErr := conn.Close()
+					return errors.Join(writeErr, closeErr)
+				}),
+			)
+		},
+	)
 	server := httptest.NewServer(Handler(handler))
 	defer server.Close()
 
@@ -79,7 +88,11 @@ func TestUpgradeProfileDelegatesConnection(t *testing.T) {
 		t.Fatalf("dial failed: %v", err)
 	}
 	defer conn.Close()
-	if _, err := io.WriteString(conn, "GET /upgrade HTTP/1.1\r\nHost: example.com\r\nConnection: Upgrade\r\nUpgrade: arkhos-test\r\n\r\n"); err != nil {
+	request := "GET /upgrade HTTP/1.1\r\n" +
+		"Host: example.com\r\n" +
+		"Connection: Upgrade\r\n" +
+		"Upgrade: arkhos-test\r\n\r\n"
+	if _, err := io.WriteString(conn, request); err != nil {
 		t.Fatalf("write request failed: %v", err)
 	}
 	data, err := io.ReadAll(conn)

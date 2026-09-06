@@ -23,7 +23,10 @@ func WithErrorPages(registry *servlet.ErrorPageRegistry) HandlerOption {
 // WithRequestContextPath 设置适配器创建请求时使用的 Web 应用上下文路径。
 func WithRequestContextPath(contextPath string) HandlerOption {
 	return func(options *handlerOptions) {
-		options.delegate = append(options.delegate, arkartanethttp.WithRequestContextPath(contextPath))
+		options.delegate = append(
+			options.delegate,
+			arkartanethttp.WithRequestContextPath(contextPath),
+		)
 	}
 }
 

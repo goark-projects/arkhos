@@ -10,7 +10,12 @@ import (
 )
 
 // StartAsync 创建当前请求的异步上下文。
-func StartAsync(ctx context.Context, req *servlet.Request, res servlet.Response, options ...async.Option) (*async.Context, error) {
+func StartAsync(
+	ctx context.Context,
+	req *servlet.Request,
+	res servlet.Response,
+	options ...async.Option,
+) (*async.Context, error) {
 	return internalprofile.StartAsync(ctx, req, res, options...)
 }
 

@@ -13,16 +13,25 @@ func TestRuntimeDeployStopsManagedApplicationWhenDecoratorFails(t *testing.T) {
 	t.Parallel()
 
 	destroyed := false
-	deployment := newRuntimeTestDeployment(t, "decorator-failure", servlet.WithContextListener(servlet.ContextListenerFunc{
-		Destroyed: func(context.Context, servlet.ContextEvent) error {
-			destroyed = true
-			return nil
-		},
-	}))
+	deployment := newRuntimeTestDeployment(
+		t,
+		"decorator-failure",
+		servlet.WithContextListener(servlet.ContextListenerFunc{
+			Destroyed: func(context.Context, servlet.ContextEvent) error {
+				destroyed = true
+				return nil
+			},
+		}),
+	)
 	failure := errors.New("decorator failed")
-	runtime := NewRuntime(runtimeTestMetadata(), WithApplicationDecorator(func(servletcontainer.Application) (servletcontainer.Application, error) {
-		return nil, failure
-	}))
+	runtime := NewRuntime(
+		runtimeTestMetadata(),
+		WithApplicationDecorator(
+			func(servletcontainer.Application) (servletcontainer.Application, error) {
+				return nil, failure
+			},
+		),
+	)
 
 	if _, err := runtime.Deploy(context.Background(), deployment); !errors.Is(err, failure) {
 		t.Fatalf("Deploy err = %v, want decorator failure", err)
@@ -36,25 +45,43 @@ func TestRuntimeDeployRejectsNilDecoratedApplication(t *testing.T) {
 	t.Parallel()
 
 	deployment := newRuntimeTestDeployment(t, "nil-decorator")
-	runtime := NewRuntime(runtimeTestMetadata(), WithApplicationDecorator(func(servletcontainer.Application) (servletcontainer.Application, error) {
-		return nil, nil
-	}))
+	runtime := NewRuntime(
+		runtimeTestMetadata(),
+		WithApplicationDecorator(
+			func(servletcontainer.Application) (servletcontainer.Application, error) {
+				return nil, nil
+			},
+		),
+	)
 
-	if _, err := runtime.Deploy(context.Background(), deployment); !errors.Is(err, ErrNilDecoratedApplication) {
+	if _, err := runtime.Deploy(context.Background(), deployment); !errors.Is(
+		err,
+		ErrNilDecoratedApplication,
+	) {
 		t.Fatalf("Deploy err = %v, want ErrNilDecoratedApplication", err)
 	}
 }
 
-func newRuntimeTestDeployment(t *testing.T, name string, options ...servlet.WebAppOption) *servletcontainer.Deployment {
+func newRuntimeTestDeployment(
+	t *testing.T,
+	name string,
+	options ...servlet.WebAppOption,
+) *servletcontainer.Deployment {
 	t.Helper()
 
 	app, err := servlet.NewWebApp(name, options...)
 	if err != nil {
 		t.Fatalf("NewWebApp failed: %v", err)
 	}
-	deployment, err := servletcontainer.NewDeployment(app, servletcontainer.WithMapping("/", servlet.HandlerFunc(func(context.Context, *servlet.Request, servlet.Response) error {
-		return nil
-	})))
+	deployment, err := servletcontainer.NewDeployment(
+		app,
+		servletcontainer.WithMapping(
+			"/",
+			servlet.HandlerFunc(func(context.Context, *servlet.Request, servlet.Response) error {
+				return nil
+			}),
+		),
+	)
 	if err != nil {
 		t.Fatalf("NewDeployment failed: %v", err)
 	}

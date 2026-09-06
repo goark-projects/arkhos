@@ -63,7 +63,10 @@ func (r *Runtime) Metadata() servletcontainer.Metadata {
 }
 
 // Deploy 初始化并保存一个 Web 应用部署。
-func (r *Runtime) Deploy(ctx context.Context, deployment *servletcontainer.Deployment) (servletcontainer.Application, error) {
+func (r *Runtime) Deploy(
+	ctx context.Context,
+	deployment *servletcontainer.Deployment,
+) (servletcontainer.Application, error) {
 	if r == nil {
 		return nil, http.ErrServerClosed
 	}

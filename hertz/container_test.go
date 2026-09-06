@@ -17,11 +17,19 @@ func TestContainerDispatchesDirectHertzRequest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewWebApp failed: %v", err)
 	}
-	deployment, err := servletcontainer.NewDeployment(appDefinition, servletcontainer.WithMapping("/", servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
-		res.Header().Set("X-Transport", "hertz")
-		_, writeErr := res.WriteString(req.Method() + " " + req.Path())
-		return writeErr
-	})))
+	deployment, err := servletcontainer.NewDeployment(
+		appDefinition,
+		servletcontainer.WithMapping(
+			"/",
+			servlet.HandlerFunc(
+				func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+					res.Header().Set("X-Transport", "hertz")
+					_, writeErr := res.WriteString(req.Method() + " " + req.Path())
+					return writeErr
+				},
+			),
+		),
+	)
 	if err != nil {
 		t.Fatalf("NewDeployment failed: %v", err)
 	}

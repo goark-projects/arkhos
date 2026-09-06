@@ -157,7 +157,8 @@ func (c *Connection) Close() error {
 }
 
 func (c *Connection) responseFlushed() bool {
-	return c.state.CompareAndSwap(uint32(connectionResponsePending), uint32(connectionIdle)) && c.owner.Draining()
+	return c.state.CompareAndSwap(uint32(connectionResponsePending), uint32(connectionIdle)) &&
+		c.owner.Draining()
 }
 
 type trackedTransport struct {

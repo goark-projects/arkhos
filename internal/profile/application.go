@@ -27,7 +27,10 @@ type application struct {
 }
 
 // Decorate 为应用绑定容器拥有的可选 Profile 运行时。
-func Decorate(delegate servletcontainer.Application, cfg Config) (servletcontainer.Application, error) {
+func Decorate(
+	delegate servletcontainer.Application,
+	cfg Config,
+) (servletcontainer.Application, error) {
 	if delegate == nil {
 		return nil, ErrNilApplication
 	}
@@ -68,17 +71,23 @@ func (a *application) Handler() servlet.Handler {
 		})
 	}
 	delegate := a.delegate.Handler()
-	return servlet.HandlerFunc(func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
-		if req != nil {
-			req.SetAttribute(attributeContext, a.profile)
-		}
-		if a.profile != nil && a.profile.securityPolicy != nil {
-			if err := a.profile.securityPolicy.Apply(ctx, req, res); err != nil {
-				return errors.Join(err, cleanupMultipart(req))
+	return servlet.HandlerFunc(
+		func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
+			if req != nil {
+				req.SetAttribute(attributeContext, a.profile)
 			}
-		}
-		return errors.Join(delegate.Serve(ctx, req, res), awaitAsync(req), cleanupMultipart(req))
-	})
+			if a.profile != nil && a.profile.securityPolicy != nil {
+				if err := a.profile.securityPolicy.Apply(ctx, req, res); err != nil {
+					return errors.Join(err, cleanupMultipart(req))
+				}
+			}
+			return errors.Join(
+				delegate.Serve(ctx, req, res),
+				awaitAsync(req),
+				cleanupMultipart(req),
+			)
+		},
+	)
 }
 
 func awaitAsync(req *servlet.Request) error {

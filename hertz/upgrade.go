@@ -10,7 +10,11 @@ import (
 )
 
 // UpgradeHTTP 通过 Hertz 原生连接劫持能力移交升级后的连接。
-func (r *response) UpgradeHTTP(ctx context.Context, _ *servlet.Request, handler upgrade.Handler) error {
+func (r *response) UpgradeHTTP(
+	ctx context.Context,
+	_ *servlet.Request,
+	handler upgrade.Handler,
+) error {
 	if handler == nil {
 		return upgrade.ErrNilHandler
 	}

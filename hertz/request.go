@@ -10,7 +10,12 @@ import (
 	"goark.dev/arkarta/servlet"
 )
 
-func newRequest(ctx context.Context, requestContext *app.RequestContext, contextPath string, options ...servlet.RequestOption) (*servlet.Request, error) {
+func newRequest(
+	ctx context.Context,
+	requestContext *app.RequestContext,
+	contextPath string,
+	options ...servlet.RequestOption,
+) (*servlet.Request, error) {
 	request := &requestContext.Request
 	uri := request.URI()
 	requestURI := uri.PathOriginal()

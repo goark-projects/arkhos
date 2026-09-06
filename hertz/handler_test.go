@@ -13,22 +13,26 @@ import (
 )
 
 func TestHandlerBridgesRequestAndResponse(t *testing.T) {
-	handler := Handler(servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
-		cookie, err := req.Cookie("sid")
-		if err != nil {
-			return err
-		}
-		body, err := io.ReadAll(req.Body())
-		if err != nil {
-			return err
-		}
-		res.SetStatus(consts.StatusCreated)
-		req.Header().Set("Content-Type", "application/json; charset=utf-8")
-		res.Header().Set("Content-Type", "text/csv")
-		res.Header().Set("X-Result", req.Header().Get("X-Trace-ID"))
-		_, err = res.WriteString(cookie.Value + ":" + string(body))
-		return err
-	}))
+	handler := Handler(
+		servlet.HandlerFunc(
+			func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+				cookie, err := req.Cookie("sid")
+				if err != nil {
+					return err
+				}
+				body, err := io.ReadAll(req.Body())
+				if err != nil {
+					return err
+				}
+				res.SetStatus(consts.StatusCreated)
+				req.Header().Set("Content-Type", "application/json; charset=utf-8")
+				res.Header().Set("Content-Type", "text/csv")
+				res.Header().Set("X-Result", req.Header().Get("X-Trace-ID"))
+				_, err = res.WriteString(cookie.Value + ":" + string(body))
+				return err
+			},
+		),
+	)
 
 	ctx := app.NewContext(0)
 	ctx.Request.Header.SetMethod("POST")
@@ -56,10 +60,14 @@ func TestHandlerBridgesRequestAndResponse(t *testing.T) {
 }
 
 func TestHandlerSeparatesRequestURIFromQueryString(t *testing.T) {
-	handler := Handler(servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
-		_, err := res.WriteString(req.RequestURI() + "|" + req.QueryString())
-		return err
-	}))
+	handler := Handler(
+		servlet.HandlerFunc(
+			func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+				_, err := res.WriteString(req.RequestURI() + "|" + req.QueryString())
+				return err
+			},
+		),
+	)
 	ctx := app.NewContext(0)
 	ctx.Request.Header.SetMethod("GET")
 	ctx.Request.SetRequestURI("/orders/42?mode=full")
@@ -72,37 +80,47 @@ func TestHandlerSeparatesRequestURIFromQueryString(t *testing.T) {
 }
 
 func TestHandlerMapsServletError(t *testing.T) {
-	handler := Handler(servlet.HandlerFunc(func(context.Context, *servlet.Request, servlet.Response) error {
-		return servlet.NewHTTPError(consts.StatusConflict, "conflict", errors.New("internal"))
-	}))
+	handler := Handler(
+		servlet.HandlerFunc(func(context.Context, *servlet.Request, servlet.Response) error {
+			return servlet.NewHTTPError(consts.StatusConflict, "conflict", errors.New("internal"))
+		}),
+	)
 	ctx := app.NewContext(0)
 	ctx.Request.SetRequestURI("/")
 	handler(t.Context(), ctx)
 
-	if ctx.Response.StatusCode() != consts.StatusConflict || string(ctx.Response.Body()) != "conflict\n" {
+	if ctx.Response.StatusCode() != consts.StatusConflict ||
+		string(ctx.Response.Body()) != "conflict\n" {
 		t.Fatalf("response = %d/%q", ctx.Response.StatusCode(), ctx.Response.Body())
 	}
 }
 
 func TestHandlerRecoversPanic(t *testing.T) {
-	handler := Handler(servlet.HandlerFunc(func(context.Context, *servlet.Request, servlet.Response) error {
-		panic("test panic")
-	}))
+	handler := Handler(
+		servlet.HandlerFunc(func(context.Context, *servlet.Request, servlet.Response) error {
+			panic("test panic")
+		}),
+	)
 	ctx := app.NewContext(0)
 	ctx.Request.SetRequestURI("/")
 	handler(t.Context(), ctx)
 
-	if ctx.Response.StatusCode() != consts.StatusInternalServerError || string(ctx.Response.Body()) != "Internal Server Error\n" {
+	if ctx.Response.StatusCode() != consts.StatusInternalServerError ||
+		string(ctx.Response.Body()) != "Internal Server Error\n" {
 		t.Fatalf("response = %d/%q", ctx.Response.StatusCode(), ctx.Response.Body())
 	}
 }
 
 func BenchmarkHandlerDirectBridge(b *testing.B) {
-	handler := Handler(servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
-		res.Header().Set("Content-Type", "text/plain")
-		_, err := res.WriteString(req.Path())
-		return err
-	}))
+	handler := Handler(
+		servlet.HandlerFunc(
+			func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+				res.Header().Set("Content-Type", "text/plain")
+				_, err := res.WriteString(req.Path())
+				return err
+			},
+		),
+	)
 	b.ReportAllocs()
 	for b.Loop() {
 		ctx := app.NewContext(0)

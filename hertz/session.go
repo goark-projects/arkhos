@@ -23,7 +23,12 @@ func NewMemorySessionManager(options ...session.MemoryManagerOption) *session.Me
 }
 
 // GetSession 获取当前请求的会话，create 为 true 时按需创建。
-func GetSession(ctx context.Context, req *servlet.Request, res servlet.Response, create bool) (session.Session, bool, error) {
+func GetSession(
+	ctx context.Context,
+	req *servlet.Request,
+	res servlet.Response,
+	create bool,
+) (session.Session, bool, error) {
 	return internalprofile.GetSession(ctx, req, res, create)
 }
 
@@ -43,7 +48,11 @@ func RequestedSessionIDValid(ctx context.Context, req *servlet.Request) (bool, e
 }
 
 // ChangeSessionID 轮换当前会话标识。
-func ChangeSessionID(ctx context.Context, req *servlet.Request, res servlet.Response) (string, error) {
+func ChangeSessionID(
+	ctx context.Context,
+	req *servlet.Request,
+	res servlet.Response,
+) (string, error) {
 	return internalprofile.ChangeSessionID(ctx, req, res)
 }
 

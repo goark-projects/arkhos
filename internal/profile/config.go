@@ -23,7 +23,11 @@ type SecurityPolicy interface {
 // SecurityPolicyFunc 将函数适配为安全策略。
 type SecurityPolicyFunc func(ctx context.Context, req *servlet.Request, res servlet.Response) error
 
-func (f SecurityPolicyFunc) Apply(ctx context.Context, req *servlet.Request, res servlet.Response) error {
+func (f SecurityPolicyFunc) Apply(
+	ctx context.Context,
+	req *servlet.Request,
+	res servlet.Response,
+) error {
 	return f(ctx, req, res)
 }
 

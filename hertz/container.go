@@ -34,9 +34,11 @@ func NewContainer(options ...ContainerOption) *Container {
 	return &Container{
 		runtime: internalcontainer.NewRuntime(
 			defaultMetadata(),
-			internalcontainer.WithApplicationDecorator(func(application servletcontainer.Application) (servletcontainer.Application, error) {
-				return internalprofile.Decorate(application, config.profiles)
-			}),
+			internalcontainer.WithApplicationDecorator(
+				func(application servletcontainer.Application) (servletcontainer.Application, error) {
+					return internalprofile.Decorate(application, config.profiles)
+				},
+			),
 		),
 		sender:         nativeio.NewStandardSender(),
 		requestOptions: append([]servlet.RequestOption(nil), config.requestOptions...),
@@ -60,7 +62,10 @@ func (c *Container) NativeSender() nativeio.Sender {
 }
 
 // Deploy 部署 Web 应用。
-func (c *Container) Deploy(ctx context.Context, deployment *servletcontainer.Deployment) (servletcontainer.Application, error) {
+func (c *Container) Deploy(
+	ctx context.Context,
+	deployment *servletcontainer.Deployment,
+) (servletcontainer.Application, error) {
 	if c == nil || c.runtime == nil {
 		return nil, ErrNilContainer
 	}
@@ -94,7 +99,13 @@ func (c *Container) Handler() app.HandlerFunc {
 		application, status := c.runtime.MatchApplication(path)
 		switch status {
 		case internalcontainer.MatchFound:
-			serve(ctx, requestContext, application.Handler(), application.WebApp().ContextPath(), c.requestOptions)
+			serve(
+				ctx,
+				requestContext,
+				application.Handler(),
+				application.WebApp().ContextPath(),
+				c.requestOptions,
+			)
 		case internalcontainer.MatchUnavailable:
 			requestContext.SetStatusCode(consts.StatusServiceUnavailable)
 		default:

@@ -60,7 +60,10 @@ func WithAsyncOptions(asyncOptions ...async.Option) ContainerOption {
 func WithMaxFormBodySize(size int64) ContainerOption {
 	return func(options *containerOptions) {
 		if size > 0 {
-			options.requestOptions = append(options.requestOptions, servlet.WithMaxFormBodySize(size))
+			options.requestOptions = append(
+				options.requestOptions,
+				servlet.WithMaxFormBodySize(size),
+			)
 		}
 	}
 }

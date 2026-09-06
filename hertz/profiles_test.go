@@ -39,14 +39,21 @@ func TestContainerMetadataDeclaresVerifiedProfiles(t *testing.T) {
 
 func TestSessionProfileUsesHertzCookieHeaders(t *testing.T) {
 	container := NewContainer()
-	deployHertzProfile(t, container, servlet.HandlerFunc(func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
-		current, ok, err := GetSession(ctx, req, res, true)
-		if err != nil || !ok {
-			return errors.Join(err, errors.New("session unavailable"))
-		}
-		_, err = res.WriteString(current.ID())
-		return err
-	}), servletcontainer.ProfileSession)
+	deployHertzProfile(
+		t,
+		container,
+		servlet.HandlerFunc(
+			func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
+				current, ok, err := GetSession(ctx, req, res, true)
+				if err != nil || !ok {
+					return errors.Join(err, errors.New("session unavailable"))
+				}
+				_, err = res.WriteString(current.ID())
+				return err
+			},
+		),
+		servletcontainer.ProfileSession,
+	)
 
 	first := newHertzRequest("GET", "/")
 	container.Handler()(t.Context(), first)
@@ -65,15 +72,26 @@ func TestSessionProfileUsesHertzCookieHeaders(t *testing.T) {
 }
 
 func TestMultipartProfileUsesHertzBody(t *testing.T) {
-	container := NewContainer(WithMultipartConfig(servletmultipart.NewConfig(servletmultipart.WithMaxRequestSize(1 << 20))))
-	deployHertzProfile(t, container, servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
-		form, err := ParseMultipart(req)
-		if err != nil {
-			return err
-		}
-		_, err = res.WriteString(form.Value("field"))
-		return err
-	}), servletcontainer.ProfileMultipart)
+	container := NewContainer(
+		WithMultipartConfig(
+			servletmultipart.NewConfig(servletmultipart.WithMaxRequestSize(1 << 20)),
+		),
+	)
+	deployHertzProfile(
+		t,
+		container,
+		servlet.HandlerFunc(
+			func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+				form, err := ParseMultipart(req)
+				if err != nil {
+					return err
+				}
+				_, err = res.WriteString(form.Value("field"))
+				return err
+			},
+		),
+		servletcontainer.ProfileMultipart,
+	)
 
 	body, contentType := hertzMultipartBody(t)
 	ctx := newHertzRequest("POST", "/upload")
@@ -87,23 +105,33 @@ func TestMultipartProfileUsesHertzBody(t *testing.T) {
 
 func TestContainerAppliesFormBodyLimit(t *testing.T) {
 	container := NewContainer(WithMaxFormBodySize(4))
-	deployHertzProfile(t, container, servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
-		if err := req.ParseParameters(); errors.Is(err, servlet.ErrFormBodyTooLarge) {
-			_, writeErr := res.WriteString("limited")
-			return writeErr
-		} else if err != nil {
-			return err
-		}
-		_, err := res.WriteString("accepted")
-		return err
-	}))
+	deployHertzProfile(
+		t,
+		container,
+		servlet.HandlerFunc(
+			func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+				if err := req.ParseParameters(); errors.Is(err, servlet.ErrFormBodyTooLarge) {
+					_, writeErr := res.WriteString("limited")
+					return writeErr
+				} else if err != nil {
+					return err
+				}
+				_, err := res.WriteString("accepted")
+				return err
+			},
+		),
+	)
 
 	ctx := newHertzRequest("POST", "/form")
 	ctx.Request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	ctx.Request.SetBodyString("field=value")
 	container.Handler()(t.Context(), ctx)
 	if ctx.Response.StatusCode() != consts.StatusOK || string(ctx.Response.Body()) != "limited" {
-		t.Fatalf("response = %d/%q, want 200/limited", ctx.Response.StatusCode(), ctx.Response.Body())
+		t.Fatalf(
+			"response = %d/%q, want 200/limited",
+			ctx.Response.StatusCode(),
+			ctx.Response.Body(),
+		)
 	}
 }
 
@@ -113,10 +141,17 @@ func TestSecurityProfileUsesHertzAuthorizationHeader(t *testing.T) {
 		security.NewBasicAuthenticator(realm),
 		security.NewConstraint(security.WithRoles("orders")),
 	)))
-	deployHertzProfile(t, container, servlet.HandlerFunc(func(_ context.Context, req *servlet.Request, res servlet.Response) error {
-		_, err := res.WriteString(security.RemoteUser(req))
-		return err
-	}), profileSecurity)
+	deployHertzProfile(
+		t,
+		container,
+		servlet.HandlerFunc(
+			func(_ context.Context, req *servlet.Request, res servlet.Response) error {
+				_, err := res.WriteString(security.RemoteUser(req))
+				return err
+			},
+		),
+		profileSecurity,
+	)
 
 	denied := newHertzRequest("GET", "/secure")
 	container.Handler()(t.Context(), denied)
@@ -128,28 +163,36 @@ func TestSecurityProfileUsesHertzAuthorizationHeader(t *testing.T) {
 	credentials := base64.StdEncoding.EncodeToString([]byte("alice:secret"))
 	allowed.Request.Header.Set("Authorization", "Basic "+credentials)
 	container.Handler()(t.Context(), allowed)
-	if allowed.Response.StatusCode() != consts.StatusOK || string(allowed.Response.Body()) != "alice" {
+	if allowed.Response.StatusCode() != consts.StatusOK ||
+		string(allowed.Response.Body()) != "alice" {
 		t.Fatalf("allowed response = %d/%q", allowed.Response.StatusCode(), allowed.Response.Body())
 	}
 }
 
 func TestAsyncProfileWaitsWithoutExilingHertzContext(t *testing.T) {
 	container := NewContainer()
-	deployHertzProfile(t, container, servlet.HandlerFunc(func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
-		asyncContext, err := StartAsync(ctx, req, res)
-		if err != nil {
-			return err
-		}
-		asyncContext.Go(func(ctx context.Context) error {
-			stream, err := NewAsyncStream(res)
-			if err != nil {
-				return err
-			}
-			_, err = stream.Write(ctx, []byte("async"))
-			return err
-		})
-		return nil
-	}), servletcontainer.ProfileAsyncStream)
+	deployHertzProfile(
+		t,
+		container,
+		servlet.HandlerFunc(
+			func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
+				asyncContext, err := StartAsync(ctx, req, res)
+				if err != nil {
+					return err
+				}
+				asyncContext.Go(func(ctx context.Context) error {
+					stream, err := NewAsyncStream(res)
+					if err != nil {
+						return err
+					}
+					_, err = stream.Write(ctx, []byte("async"))
+					return err
+				})
+				return nil
+			},
+		),
+		servletcontainer.ProfileAsyncStream,
+	)
 
 	ctx := newHertzRequest("GET", "/async")
 	container.Handler()(t.Context(), ctx)
@@ -162,17 +205,29 @@ func TestAsyncProfileWaitsForTimedOutWorkerBeforeReturning(t *testing.T) {
 	container := NewContainer()
 	started := make(chan struct{})
 	release := make(chan struct{})
-	deployHertzProfile(t, container, servlet.HandlerFunc(func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
-		asyncContext, err := StartAsync(ctx, req, res, servletasync.WithTimeout(time.Millisecond))
-		if err != nil {
-			return err
-		}
-		return asyncContext.Go(func(context.Context) error {
-			close(started)
-			<-release
-			return nil
-		})
-	}), servletcontainer.ProfileAsyncStream)
+	deployHertzProfile(
+		t,
+		container,
+		servlet.HandlerFunc(
+			func(ctx context.Context, req *servlet.Request, res servlet.Response) error {
+				asyncContext, err := StartAsync(
+					ctx,
+					req,
+					res,
+					servletasync.WithTimeout(time.Millisecond),
+				)
+				if err != nil {
+					return err
+				}
+				return asyncContext.Go(func(context.Context) error {
+					close(started)
+					<-release
+					return nil
+				})
+			},
+		),
+		servletcontainer.ProfileAsyncStream,
+	)
 
 	ctx := newHertzRequest("GET", "/async-timeout")
 	done := make(chan struct{})
@@ -197,7 +252,12 @@ func TestAsyncProfileWaitsForTimedOutWorkerBeforeReturning(t *testing.T) {
 	}
 }
 
-func deployHertzProfile(t *testing.T, container *Container, handler servlet.Handler, profiles ...servletcontainer.Profile) {
+func deployHertzProfile(
+	t *testing.T,
+	container *Container,
+	handler servlet.Handler,
+	profiles ...servletcontainer.Profile,
+) {
 	t.Helper()
 	webApp, err := servlet.NewWebApp("profiles")
 	if err != nil {

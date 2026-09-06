@@ -22,12 +22,25 @@ func Handler(handler servlet.Handler, options ...servlet.RequestOption) app.Hand
 	}
 }
 
-func serve(ctx context.Context, requestContext *app.RequestContext, handler servlet.Handler, contextPath string, options []servlet.RequestOption) {
+func serve(
+	ctx context.Context,
+	requestContext *app.RequestContext,
+	handler servlet.Handler,
+	contextPath string,
+	options []servlet.RequestOption,
+) {
 	res := newResponse(requestContext)
 	defer res.finish()
 	defer recoverPanic(res)
 	if handler == nil {
-		writeError(res, servlet.NewHTTPError(consts.StatusInternalServerError, "handler is nil", servlet.ErrNilHandler))
+		writeError(
+			res,
+			servlet.NewHTTPError(
+				consts.StatusInternalServerError,
+				"handler is nil",
+				servlet.ErrNilHandler,
+			),
+		)
 		return
 	}
 	req, err := newRequest(ctx, requestContext, contextPath, options...)
@@ -46,7 +59,10 @@ func recoverPanic(res *response) {
 		return
 	}
 	err := fmt.Errorf("panic recovered: %v\n%s", value, debug.Stack())
-	writeError(res, servlet.NewHTTPError(consts.StatusInternalServerError, "Internal Server Error", err))
+	writeError(
+		res,
+		servlet.NewHTTPError(consts.StatusInternalServerError, "Internal Server Error", err),
+	)
 }
 
 func writeError(res *response, err error) {
@@ -66,7 +82,12 @@ func writeError(res *response, err error) {
 }
 
 // StartAsync 创建当前请求的异步上下文。
-func StartAsync(ctx context.Context, req *servlet.Request, res servlet.Response, options ...async.Option) (*async.Context, error) {
+func StartAsync(
+	ctx context.Context,
+	req *servlet.Request,
+	res servlet.Response,
+	options ...async.Option,
+) (*async.Context, error) {
 	return internalprofile.StartAsync(ctx, req, res, options...)
 }
 
