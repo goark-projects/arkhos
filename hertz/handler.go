@@ -10,6 +10,8 @@ import (
 	"github.com/cloudwego/hertz/pkg/protocol/consts"
 
 	"goark.dev/arkarta/servlet"
+	"goark.dev/arkarta/servlet/async"
+	internalprofile "goark.dev/arkhos/internal/profile"
 )
 
 // Handler 将 Arkarta Servlet Handler 适配为 Hertz Handler。
@@ -61,4 +63,14 @@ func writeError(res *response, err error) {
 	res.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	res.SetStatus(statusCode)
 	_, _ = res.WriteString(message + "\n")
+}
+
+// StartAsync 创建当前请求的异步上下文。
+func StartAsync(ctx context.Context, req *servlet.Request, res servlet.Response, options ...async.Option) (*async.Context, error) {
+	return internalprofile.StartAsync(ctx, req, res, options...)
+}
+
+// NewAsyncStream 创建流式响应写入器。
+func NewAsyncStream(res servlet.Response) (*async.Stream, error) {
+	return async.NewStream(res)
 }

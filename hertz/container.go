@@ -14,6 +14,13 @@ import (
 	"goark.dev/arkarta/servlet/nativeio"
 )
 
+const (
+	// Name 是 Arkhos Hertz 容器实现名称。
+	Name = "arkhos-hertz"
+	// Version 是 Arkhos Hertz 容器实现版本。
+	Version = "0.0.1"
+)
+
 // Container 是基于 Hertz 的 Arkhos Servlet 容器。
 type Container struct {
 	runtime        *internalcontainer.Runtime
