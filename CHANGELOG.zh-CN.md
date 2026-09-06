@@ -14,6 +14,7 @@
 
 - 修复空闲 HTTP keep-alive 连接导致优雅关闭耗尽全部超时的问题，同时保证正在处理的请求能够完成。
 - 修复快速启停时 Hertz 退出结果可能在 Server 等待循环前被消费的竞态。
+- 为 `net/http` Server 设置请求头和空闲连接超时，同时保持流式响应行为。
 
 ### Added
 
@@ -23,6 +24,7 @@
 - 新增 Hertz 原生容器和托管服务器并作为默认引擎，同时保留 `net/http` 实现。
 - 新增就绪状态、可配置表单限制、立即关闭和确定性的优雅关闭。
 - 将 Go 基线提升至 1.26，并新增包含 race 测试的跨平台 CI。
+- 将所有实际使用的 `golang.org/x` 模块对齐到最新稳定版本。
 
 [未发布]: https://github.com/goark-projects/arkhos/compare/v0.0.1...HEAD
 [0.0.1]: https://github.com/goark-projects/arkhos/releases/tag/v0.0.1

@@ -14,6 +14,8 @@ No unreleased changes.
 
 - Fixed graceful shutdown with idle HTTP keep-alive connections so active requests can finish without consuming the entire shutdown deadline.
 - Fixed a rapid start/stop race that could consume the Hertz exit result before the server wait loop observed it.
+- Applied bounded request-header and idle timeouts to the `net/http` server
+  while preserving streaming response behavior.
 
 ### Added
 
@@ -25,6 +27,7 @@ No unreleased changes.
 - Added readiness reporting, configurable form limits, immediate close, and
   deterministic graceful shutdown.
 - Raised the Go baseline to 1.26 and added cross-platform CI with race tests.
+- Aligned all used `golang.org/x` modules with their latest stable releases.
 
 [Unreleased]: https://github.com/goark-projects/arkhos/compare/v0.0.1...HEAD
 [0.0.1]: https://github.com/goark-projects/arkhos/releases/tag/v0.0.1
