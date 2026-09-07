@@ -8,7 +8,7 @@ All notable changes to Arkhos are documented in this file.
 
 No unreleased changes.
 
-## [0.0.1] - 2026-09-06
+## [0.0.1] - 2026-09-07
 
 ### Fixed
 
